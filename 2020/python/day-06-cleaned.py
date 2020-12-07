@@ -151,35 +151,20 @@ lcompact = partial(lfilter, None)
 
 
 def group_to_unique(group):
-    string = "".join(group)
-    return list(unique(string))
+    return list(set("".join(group)))
 
 
 def group_to_unan(group):
-    group = lcompact(group)
-    total = list(concat(group))
-    return sum([1 for i in unique(total) if total.count(i) == len(group)])
-
-    unan = 0
-    for c in unique(total):
-        if total.count(c) == len(group):
-            unan = unan + 1
-    return unan
-
-
-def unanimous(group):
-    pass
+    return sum(
+        [1 for i in set("".join(group)) if all([i in ln for ln in group])]
+    )
 
 
 def process(text):
-    groups = lcompact(_.split("\n") for _ in text.split("\n\n"))
-    ugr = lmap(group_to_unique, groups)
-    count = sum([len(_) for _ in ugr])
-
-    unangr = lmap(group_to_unan, groups)
-
-    pdb.set_trace()
-    return
+    groups = [_.split("\n") for _ in text.split("\n\n")]
+    a1 = sum([len(group_to_unique(group)) for group in groups])
+    a2 = sum(map(group_to_unan, groups))
+    return a1, a2
 
 
 if __name__ == "__main__":
@@ -187,6 +172,32 @@ if __name__ == "__main__":
     # test_answer = whatever
     # assert process(test, params) == test_answer
 
-    raw = Path("input-06.txt").read_text()
-    raw = raw.strip()  # comment this out if trailing stuff is important!
-    result = process(raw)
+    raw = Path("input-06.txt").read_text().strip()
+    assert process(raw) == (6903, 3493)
+    """
+    a1 = sum(
+        [
+            sum([1 for i in ascii_lowercase if all([i in ln for ln in group])])
+            for group in lcompact(
+                _.split("\n")
+                for _ in Path("input-06.txt").read_text().strip().split("\n\n")
+            )
+        ]
+    )
+    a2 = sum(
+        [
+            sum(
+                [
+                    1
+                    for i in set("".join(group))
+                    if all([i in ln for ln in group])
+                ]
+            )
+            for group in [
+                _.split("\n")
+                for _ in Path("input-06.txt").read_text().strip().split("\n\n")
+            ]
+        ]
+    )
+    print(a2)
+    """
