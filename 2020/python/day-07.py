@@ -46,8 +46,7 @@ def search(mygraph, mynode, prepreds):
         return prepreds
     for pred in preds:
         prepreds = prepreds + [pred] if pred not in prepreds else prepreds
-    for sub in preds:
-        prepreds = search(mygraph, sub, prepreds)
+        prepreds = search(mygraph, pred, prepreds)
     return prepreds
 
 
