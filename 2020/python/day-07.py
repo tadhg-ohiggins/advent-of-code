@@ -5,13 +5,7 @@ import networkx  # type: ignore
 from toolz import complement, compose_left, itemmap  # type: ignore
 
 lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-is_char_09 = partial(lambda y, x: x in y, ascii_digits)
-filter_str = partial(lambda f, s: "".join(filter(f, s)))
 lcompact = partial(lfilter, None)
-
-
-def removedigits(text):
-    return "".join(filter(complement(is_char_09), text)).strip()
 
 
 def parse(rule):
