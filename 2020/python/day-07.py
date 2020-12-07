@@ -1,3 +1,4 @@
+import pdb
 from functools import partial
 from pathlib import Path
 from string import digits as ascii_digits
@@ -39,17 +40,15 @@ def add_edge(mygraph, edge, origincolor, colormap):
     return mygraph
 
 
-def search(mygraph, mynode, prepreds, total):
+def search(mygraph, mynode, prepreds):
     preds = list(mygraph.predecessors(mynode))
     if not preds:
-        return total, prepreds
+        return prepreds
     for pred in preds:
-        if pred not in prepreds:
-            total = total + 1
-            prepreds = prepreds + [pred]
+        prepreds = prepreds + [pred] if pred not in prepreds else prepreds
     for sub in preds:
-        total, prepreds = search(mygraph, sub, prepreds, total)
-    return total, prepreds
+        prepreds = search(mygraph, sub, prepreds)
+    return prepreds
 
 
 def ssearch(mygraph, mynode, total):
@@ -71,9 +70,9 @@ def process(text):
     populated = add_nodes(graph, nodemap)
     for rule in lines:
         populated = parse_edges(rule, color_to_node, populated)
-    totals = search(populated, color_to_node.get("shiny gold"), [], 0)
-    assert totals[0] == 101
-    print("Answer to part one: ", totals[0])
+    totals = search(populated, color_to_node.get("shiny gold"), [])
+    assert len(totals) == 101
+    print("Answer to part one: ", len(totals))
     totals2 = ssearch(populated, color_to_node.get("shiny gold"), 0)
     assert totals2 - 1 == 108636
     print("Answer to part two: ", totals2 - 1)
