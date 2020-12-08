@@ -15,6 +15,7 @@ from toolz import (  # type: ignore
     curry,
     do,
     excepts,
+    iterate,
     keyfilter,
     pluck,
     pipe,
@@ -92,6 +93,23 @@ def until_stable(func: Callable) -> Callable:
     return inner
 
 
+def until_stable(func: Callable) -> Callable:
+    """
+    Repeatedly call the same function on its arguments until the result doesn't
+    change.
+
+    Not sure how to make this work in variadic cases; comparing a single result
+    to *args doesn't seem to work.
+    """
+
+    def inner(arg: Any, **kwds: Any) -> Any:
+        if func(arg, **kwds) == arg:
+            return arg
+        return inner(func(arg, **kwds))
+
+    return inner
+
+
 def oxford(lst: List[str]) -> str:
     """
     Turns a list into a properly-formatted list phrase.
@@ -150,10 +168,88 @@ lcompact = partial(lfilter, None)
 splitstrip = compose_left(str.split, partial(lmap, str.strip), lcompact)
 
 
+def proc_line(lines, current, acc, seen):
+    seen = seen + [current]
+    cmd, amt = splitstrip(lines[current], " ")
+    if cmd in ("nop", "acc"):
+        nxt = current + 1
+    if cmd == "jmp":
+        nxt = current + int(amt)
+    if cmd == "acc":
+        acc = acc + int(amt)
+    if nxt in seen:
+        return acc
+    else:
+        return proc_line(lines, nxt, acc, seen)
+
+
+def proc_line2(lines, current, acc, seen, changed):
+    print(current)
+    try:
+        print(lines[current])
+    except:
+        return acc
+
+    seen = seen + [current]
+    cmd, amt = splitstrip(lines[current], " ")
+    if cmd in ("nop", "acc"):
+        nxt = current + 1
+    if cmd == "jmp":
+        nxt = current + int(amt)
+    if cmd == "acc":
+        acc = acc + int(amt)
+    if nxt in seen:
+        print("seen", lines[current], nxt)
+        return False
+    else:
+        return proc_line2(lines, nxt, acc, seen, changed)
+
+
 def process(text):
-    lines = lcompact(text.splitlines())
+    origlines = lcompact(text.splitlines())
+    lines = origlines[:]
+    # acc = proc_line(lines, 0, 0, [])
+    # acc = proc_line2(lines, 0, 0, [], False)
+    # newlines = lines[:]
+    # newlines[195] = newlines[195].replace("nop", "jmp")
+    make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
+    ctr = make_counter()
+    while True:
+        seen = []
+        acc = proc_line2(lines, 0, 0, seen, False)
+        if acc != False:
+            print("yo", acc)
+            break
+        i = ctr()
+        lines = origlines[:]
+        if "jmp" in lines[i]:
+            lines[i] = lines[i].replace("jmp", "nop")
+        elif "nop" in lines[i]:
+            lines[i] = lines[i].replace("nop", "jmp")
+        print(lines)
+        seen = []
+        acc = proc_line2(lines, 0, 0, seen, False)
+        print("acc", acc)
+        if acc != False:
+            print("yo", acc)
+            break
+        # print(lines[i])
+
     pdb.set_trace()
     return
+
+
+test_lines = [
+    "nop +0",
+    "acc +1",
+    "jmp +4",
+    "acc +3",
+    "jmp -3",
+    "acc -99",
+    "acc +1",
+    "jmp -4",
+    "acc +6",
+]
 
 
 if __name__ == "__main__":
@@ -161,6 +257,6 @@ if __name__ == "__main__":
     # test_answer = whatever
     # assert process(test, params) == test_answer
 
-    raw = Path("input-00.txt").read_text()
+    raw = Path("input-08.txt").read_text()
     raw = raw.strip()  # comment this out if trailing stuff is important!
     result = process(raw)
