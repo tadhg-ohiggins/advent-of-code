@@ -208,10 +208,6 @@ def proc_line2(lines, current, acc, seen, changed):
 def process(text):
     origlines = lcompact(text.splitlines())
     lines = origlines[:]
-    # acc = proc_line(lines, 0, 0, [])
-    # acc = proc_line2(lines, 0, 0, [], False)
-    # newlines = lines[:]
-    # newlines[195] = newlines[195].replace("nop", "jmp")
     make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
     ctr = make_counter()
     while True:
