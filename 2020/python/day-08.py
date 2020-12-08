@@ -184,10 +184,7 @@ def proc_line(lines, current, acc, seen):
 
 
 def proc_line2(lines, current, acc, seen, changed):
-    print(current)
-    try:
-        print(lines[current])
-    except:
+    if current >= len(lines):
         return acc
 
     seen = seen + [current]
@@ -199,7 +196,6 @@ def proc_line2(lines, current, acc, seen, changed):
     if cmd == "acc":
         acc = acc + int(amt)
     if nxt in seen:
-        print("seen", lines[current], nxt)
         return False
     else:
         return proc_line2(lines, nxt, acc, seen, changed)
@@ -207,14 +203,16 @@ def proc_line2(lines, current, acc, seen, changed):
 
 def process(text):
     origlines = lcompact(text.splitlines())
+    answer_one = proc_line(origlines, 0, 0, [])
+    assert answer_one == 1675
+
+    ctr = partial(next, iterate(lambda x: x + 1, 0))
     lines = origlines[:]
-    make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
-    ctr = make_counter()
+    answer_two = None
     while True:
-        seen = []
-        acc = proc_line2(lines, 0, 0, seen, False)
+        acc = proc_line2(lines, 0, 0, [], False)
         if acc != False:
-            print("yo", acc)
+            answer_two = acc
             break
         i = ctr()
         lines = origlines[:]
@@ -222,16 +220,10 @@ def process(text):
             lines[i] = lines[i].replace("jmp", "nop")
         elif "nop" in lines[i]:
             lines[i] = lines[i].replace("nop", "jmp")
-        print(lines)
-        seen = []
-        acc = proc_line2(lines, 0, 0, seen, False)
-        print("acc", acc)
-        if acc != False:
-            print("yo", acc)
-            break
-        # print(lines[i])
 
-    pdb.set_trace()
+    assert answer_two == 1532
+    print("Answer one: ", answer_one)
+    print("Answer two: ", answer_two)
     return
 
 
