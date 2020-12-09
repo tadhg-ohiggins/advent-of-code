@@ -148,6 +148,7 @@ add_pprint = partial(add_debug, pprint)
 add_pprinting = partial(lmap, add_pprint)
 lcompact = partial(lfilter, None)
 splitstrip = compose_left(str.split, partial(lmap, str.strip), lcompact)
+make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
 
 
 def process(text):
