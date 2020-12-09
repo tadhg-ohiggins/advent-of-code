@@ -1,10 +1,7 @@
 from functools import partial
 from pathlib import Path
 from typing import List, Union
-from toolz import (  # type: ignore
-    compose_left,
-    sliding_window,
-)
+from toolz import compose_left, sliding_window  # type: ignore
 
 
 lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
