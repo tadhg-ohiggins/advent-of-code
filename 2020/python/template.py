@@ -1,23 +1,28 @@
 import pdb
 import subprocess
+from collections import Counter
 from functools import partial, reduce, wraps
+from itertools import groupby
 from math import prod
+from operator import itemgetter
 from pathlib import Path
 from pprint import pprint
 from string import (
     ascii_lowercase,
     digits as ascii_digits,
 )
-from typing import Any, Callable, List, Iterable, Optional, Union
+from typing import Any, Callable, List, Iterable, Optional, Sequence, Union
 from toolz import (  # type: ignore
     compose_left,
     concat,
     curry,
     do,
     excepts,
+    iterate,
     keyfilter,
     pluck,
     pipe,
+    sliding_window,
 )
 
 
@@ -132,6 +137,35 @@ def excepts_wrap(err: Any, err_func: Callable) -> Callable:
     return inner_excepts_wrap
 
 
+def firstwhere(pred: Callable, seq: Sequence) -> Any:
+    return next(filter(pred, seq), False)
+
+
+def noncontinuous(array: list[int]):
+    """
+    noncontinuous([1, 2, 3, 5, 6, 8, 9, 10]) == [[1, 2, 3], [5, 6], [8, 9, 10]]
+
+    The difference between a number and its index will be stable for a
+    consecutive run, so we can group by that.
+
+    -1 for 1, 2, and 3; -2 for 5 and 6; -3 for 8, 9 and 10 in the above list.
+
+    enumerate gets us item and index, a quick x[0] - x[1] lambda gets us the
+    difference.
+
+    Once we have them in groups, we extract them into the lists of runs.
+
+    This could be all iterators instead of lists, but I'll make another
+    function to do that translation.
+
+    See also consecutive_groups in more_itertools, which was the basis for
+    this.
+    """
+    check = lambda x: x[0] - x[1]
+    collate = lambda x: map(itemgetter(1), list(x)[1])
+    return map(collate, groupby(enumerate(array), key=check))
+
+
 lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
 lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
 lpluck = compose_left(pluck, list)  # lambda k, l: [*pluck(f, l)]
@@ -148,7 +182,11 @@ add_pprint = partial(add_debug, pprint)
 add_pprinting = partial(lmap, add_pprint)
 lcompact = partial(lfilter, None)
 splitstrip = compose_left(str.split, partial(lmap, str.strip), lcompact)
-make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
+make_incr = lambda: partial(next, iterate(lambda x: x + 1, 0))
+
+
+def lnoncontinuous(array: list[int]):
+    return lmap(list, noncontinuous(array))
 
 
 def process(text):
