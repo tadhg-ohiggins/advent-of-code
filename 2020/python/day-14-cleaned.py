@@ -22,7 +22,7 @@ def parsecommand(line):
 
 
 def parse_lines(lines):
-    mask = splitstrip(lines[0], " = ")[1].removeprefix("0b")
+    mask = splitstrip(lines[0], " = ")[1]
     commands = lmap(parsecommand, lines[1:])
     return mask, commands
 
