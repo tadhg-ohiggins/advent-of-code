@@ -140,9 +140,7 @@ def process_input(text: str) -> Tuple:
 
 
 def load_input(fname: str) -> str:
-    raw = Path(fname).read_text()
-    raw = raw.strip()  # comment this out if trailing stuff is important!
-    return raw
+    return Path(fname).read_text().strip()
 
 
 def process(data: Tuple) -> int:
