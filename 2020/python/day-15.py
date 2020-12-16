@@ -2,7 +2,7 @@ import pdb
 import subprocess
 from collections import Counter
 from functools import partial, reduce, wraps
-from itertools import groupby
+from itertools import count, groupby
 from math import prod
 from operator import itemgetter
 from pathlib import Path
@@ -182,47 +182,25 @@ add_pprint = partial(add_debug, pprint)
 add_pprinting = partial(lmap, add_pprint)
 lcompact = partial(lfilter, None)
 splitstrip = compose_left(str.split, partial(lmap, str.strip), lcompact)
-make_incr = lambda: partial(next, iterate(lambda x: x + 1, 0))
+make_incrementer = lambda start=0, step=1: partial(next, count(start, step))
 
 
 def lnoncontinuous(array: list[int]):
     return lmap(list, noncontinuous(array))
 
 
-def part_one(numbers, ordinal):
-    newnums = numbers[:]
-    newlyseen = set(newnums[:])
-    index = len(numbers) - 1
-    count = 0
-    newcount = 3
-    answer = None
-    while True:
-        # print(newnums)
-        # print(index, count)
-        current = newnums[index]
-        # print(current)
-        if current not in newnums[:index]:
-            # if current not in newlyseen:
-            # newnums = newnums + [0]
-            newnums.append(0)
-            # newlyseen.add(0)
-            newcount = newcount + 1
-        else:
-            ridx = list(reversed(newnums[:index])).index(current) + 1
-            idx = len(newnums) - ridx
-            # print(ridx, len(newnums), index, idx)
-            new_number = len(newnums) - idx
-            newlyseen.add(new_number)
-            # newnums = newnums + [new_number]
-            newnums.append(new_number)
-        newlyseen.add(current)
-        index = index + 1
-        count = count + 1
-        if index == (ordinal - 1):
-            answer = newnums[-1]
+def find_nth_number(numbers, ordinal):
+    positions = {x: i for i, x in enumerate(numbers)}
+    for index in count(len(numbers) - 1):
+        current = numbers[index]
+        lastpos = positions.get(current, False)
+        positions[current] = index
+        steps_back = 0 if lastpos is False else index - lastpos
 
-            break
-    return answer
+        numbers.append(steps_back)
+
+        if len(numbers) == ordinal:
+            return steps_back
 
 
 testdata = [
@@ -239,15 +217,16 @@ testdata = [
 def process(text):
     lines = lcompact(text.splitlines())
     numbers = lmap(int, splitstrip(lines[0], ","))
-    for nums, ordinal, answer in testdata:
-        testanswer = part_one(nums, ordinal)
-        print(testdata, testanswer, testanswer == testanswer)
-    print(numbers)
-    # numbers = [0, 1, 2]
-    answer = part_one(numbers, 2020)
-    print(answer)
-    answer = part_one(numbers, 30000000)
-    print(answer)
+    if True:
+        for nums, ordinal, tanswer in testdata:
+            testanswer = find_nth_number(nums, ordinal)
+            assert testanswer == tanswer
+    answer = find_nth_number(numbers[:], 2020)
+    assert answer == 240
+    print("Answer one:", answer)
+    answer_two = find_nth_number(numbers[:], 30000000)
+    assert answer_two == 505
+    print("Answer two:", answer_two)
     return
 
 
