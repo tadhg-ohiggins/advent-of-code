@@ -4,7 +4,7 @@ import subprocess
 from collections import Counter
 from dataclasses import asdict, dataclass, fields
 from functools import partial, reduce, wraps
-from itertools import combinations, count, groupby
+from itertools import count, groupby, product
 from math import prod
 from more_itertools import split_at
 from operator import attrgetter, itemgetter
@@ -416,7 +416,7 @@ def pt_to_str(point):
 def adjacent_transforms(
     dimensions: int, omit_origin: bool = True
 ) -> List[Tuple]:
-    adj = set(combinations([-1, 0, 1] * dimensions, dimensions))
+    adj = product([-1, 0, 1], repeat=dimensions)
     not_origin = lambda x: not all([_ == 0 for _ in x])
     return lfilter(not_origin, adj) if omit_origin else adj
 
