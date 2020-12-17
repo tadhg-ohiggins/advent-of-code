@@ -1,9 +1,10 @@
+import datetime
 import pdb
 import subprocess
 from collections import Counter
 from dataclasses import asdict, dataclass, fields
 from functools import partial, reduce, wraps
-from itertools import count, groupby
+from itertools import combinations, count, groupby
 from math import prod
 from more_itertools import split_at
 from operator import attrgetter, itemgetter
@@ -21,6 +22,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 from toolz import (  # type: ignore
@@ -215,35 +217,49 @@ def load_input(fname):
 
 
 @dataclass
-class Point:
-    on: bool
-    x: int
-    y: int
-    z: int
-
-
-@dataclass
 class PointMin:
     x: int
     y: int
     z: int
 
+    def __hash__(self):
+        return hash(pt_to_str(self))
+
+    def __eq__(self, other):
+        return pt_to_str(self) == pt_to_str(other)
+
 
 @dataclass
-class Point4:
+class Point(PointMin):
     on: bool
-    x: int
-    y: int
-    z: int
-    w: int
+
+    def __hash__(self):
+        return hash(pt_to_str(self))
+
+    def __eq__(self, other):
+        return pt_to_str(self) == pt_to_str(other)
 
 
 @dataclass
-class Point4Min:
-    x: int
-    y: int
-    z: int
+class Point4(Point):
     w: int
+
+    def __hash__(self):
+        return hash(pt_to_str(self))
+
+    def __eq__(self, other):
+        return pt_to_str(self) == pt_to_str(other)
+
+
+@dataclass
+class Point4Min(PointMin):
+    w: int
+
+    def __hash__(self):
+        return hash(pt_to_str(self))
+
+    def __eq__(self, other):
+        return pt_to_str(self) == pt_to_str(other)
 
 
 def pt_to_ptmin(point: Point) -> PointMin:
@@ -276,7 +292,7 @@ def lines_to_points(lines: List[str]) -> Point:
         for j, y in enumerate(lines):
             xpoints = []
             for k, x in enumerate(y):
-                points.append(Point(False, k, j, i))
+                points.append(Point(on=False, x=k, y=j, z=i))
                 xpoints.append(x)
             xlines.append(xpoints)
         xplanes.append(xlines)
@@ -342,7 +358,7 @@ def xfind_adjacent(points, point):
     return adj
 
 
-def find_adjacent(points, point):
+def xxfind_adjacent(points, point):
     fnames = coord_fnames(point)
 
     adj = [
@@ -361,8 +377,27 @@ def find_adjacent(points, point):
     return adj
 
 
+def find_adjacent(points, point):
+    transforms = adjacent_transforms(4)
+    neighbors = [point_add(pt_to_pt4min(point), tform) for tform in transforms]
+    return [
+        points[points.index(p)] for p in set(points).intersection(neighbors)
+    ]
+
+
 def count_active(points):
     return len(lfilter(lambda p: p.on, points))
+
+
+def check_for_live(points, point):
+    neighbors = find_adjacent(points, point)
+    count = 0
+    for p in neighbors:
+        if p.on:
+            count += 1
+        if count > 3:
+            return 4
+    return count
 
 
 def count_active_neighbors(points, point):
@@ -378,17 +413,37 @@ def pt_to_str(point):
     return ".".join([str(getattr(point, f)) for f in coord_fnames(point)])
 
 
-def add_adjacent(points):
+def adjacent_transforms(
+    dimensions: int, omit_origin: bool = True
+) -> List[Tuple]:
+    adj = set(combinations([-1, 0, 1] * dimensions, dimensions))
+    not_origin = lambda x: not all([_ == 0 for _ in x])
+    return lfilter(not_origin, adj) if omit_origin else adj
+
+
+def point_add(point, rel):
+    dcoords = asdict(point)
+    coords = omit(["on"], dcoords)
+    ond = {"on": False} if "on" in dcoords else {}
+    relc = asdict(Point4Min(*rel))
+    newpoint = {k: coords[k] + relc[k] for k in coords} | ond
+    return point.__class__(**newpoint)
+
+
+def xadd_adjacent(points):
     pointsmin = [pt_to_ptmin(pt) for pt in points]
     # print(len(pointsmin))
     spoints = [pt_to_str(p) for p in points]
     # print(len(spoints))
     # print(len(set(spoints)))
     added = []
+    count = 0
     for point in pointsmin:
         for x in range(point.x - 1, point.x + 2):
             for y in range(point.y - 1, point.y + 2):
                 for z in range(point.z - 1, point.z + 2):
+                    print(count)
+                    count = count + 1
                     pmin = PointMin(x, y, z)
                     spmin = pt_to_str(pmin)
                     if spmin not in spoints and spmin not in added:
@@ -398,6 +453,24 @@ def add_adjacent(points):
     # print(len(spoints))
     # print(len(set(spoints)))
     # pdb.set_trace()
+    return points
+
+
+def add_adjacent(points):
+    transforms = adjacent_transforms(4)
+    pointsmin = points[:]
+    count = 0
+    added = set()
+    spoints = set(pt_to_str(_) for _ in points)
+    for point in pointsmin:
+        neighbors = [point_add(point, tform) for tform in transforms]
+        for neighbor in neighbors:
+            count += 1
+            sn = pt_to_str(neighbor)
+            if sn not in added and sn not in spoints:
+                points.append(neighbor)
+                added.add(sn)
+
     return points
 
 
@@ -428,22 +501,33 @@ def add_adjacent4(points):
     return points
 
 
-def cycle_step(points, func, klass):
+def cycle_step(points, func, klass, active=None):
+    preex = datetime.datetime.now().timestamp()
     expanded = func(points)
+    print("expanded", datetime.datetime.now().timestamp() - preex)
+    preac = datetime.datetime.now().timestamp()
+    if active is None:
+        active = lfilter(lambda p: p.on, expanded)
+    new_active = []
+    print("active", datetime.datetime.now().timestamp() - preac)
     newpoints = []
     # print(len(expanded))
     for point in expanded:
         newpoint, on = None, None
         if point.on:
-            on = count_active_neighbors(points, point) in (2, 3)
+            # on = count_active_neighbors(active, point) in (2, 3)
+            on = check_for_live(active, point) in (2, 3)
         else:
-            on = count_active_neighbors(points, point) == 3
+            # on = count_active_neighbors(active, point) == 3
+            on = check_for_live(active, point) == 3
         newpointd = asdict(point) | {"on": on}
         # newpoint = Point(on=on, x=point.x, y=point.y, z=point.z)
         newpoint = klass(**newpointd)
+        if on:
+            new_active.append(newpoint)
         newpoints.append(newpoint)
 
-    return newpoints
+    return newpoints, new_active
 
 
 def process(data):
@@ -456,18 +540,20 @@ def process(data):
     """
     newpoints = points[:]
     for i in range(6):
+        precount = datetime.datetime.now().timestamp()
         print(i, count_active(newpoints))
+        print("counted active", datetime.datetime.now().timestamp() - precount)
         newpoints = cycle_step(newpoints, add_adjacent, Point)
     print("Answer after", i + 1, count_active(newpoints))
 
     """
     wpoints = [pt_to_pt4(p) for p in points]
+    active = None
     for i in range(6):
         print(i, count_active(wpoints))
-        wpoints = cycle_step(wpoints, add_adjacent4, Point4)
+        wpoints, active = cycle_step(wpoints, add_adjacent, Point4, active)
     print("Answer after", i + 1, count_active(wpoints))
 
-    pdb.set_trace()
     return
 
 
@@ -504,9 +590,9 @@ def cli_main():
     data = compose_left(load_input, process_input)("input-17.txt")
     answer = process(testdata)
     assert answer == 112
-    # pdb.set_trace()
-    # answer = process(data)
-    # pdb.set_trace()
+    pdb.set_trace()
+    answer = process(data)
+    pdb.set_trace()
     print("Answer one:", answer)
 
 
