@@ -1,59 +1,87 @@
 from functools import partial
-from pathlib import Path
-from typing import List, Union
-from toolz import compose_left, sliding_window  # type: ignore
+from typing import List, cast
+from toolz import sliding_window  # type: ignore
+from tutils import (
+    UBoolInt,
+    lmap,
+    load_and_process_input,
+    nextwhere,
+    run_tests,
+    splitstriplines,
+)
+
+DAY = "09"
+INPUT = f"input-{DAY}.txt"
+TEST = f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 104054607
+ANSWER2 = 13935797
 
 
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lcompact = partial(lfilter, None)
+def do_two_items_sum_to(candidates: List[int], target: int) -> bool:
+    return nextwhere(lambda num: target - num in candidates, candidates)
 
 
-def is_sum_in(candidates: List[int], target: int) -> bool:
-    for candidate in candidates:
-        if target - candidate in candidates:
-            return True
-    return False
+def is_not_sum_of_prior_n(numbers: List[int], limit: int) -> UBoolInt:
+    """
+    Shorter but less comrehensible:
 
-
-def is_sum_in_prior_n(numbers: List[int], limit: int) -> Union[int, bool]:
+    check = lambda item: not do_two_items_sum_to(item[:limit], item[limit])
+    return nextwhere(check, sliding_window(limit + 1, numbers))
+    """
     for window in sliding_window(limit + 1, numbers):
         candidates, target = window[:limit], window[limit]
-        if not is_sum_in(candidates, target):
+        if not do_two_items_sum_to(candidates, target):
             return target
     return False
 
 
-def contiguous_sum(candidates: List[int], target: int) -> Union[List, bool]:
+def find_range_that_sums_to(candidates: List[int], target: int) -> List:
+    """
+    The following line works, but is a lot slower than the for loop, probably
+    because it has to keep the entire list of lists, whereas the for loop just
+    has to keep the sum.
+    return nextwhere(lambda x: sum(x) == target, list_accumulator(candidates))
+    """
     total = 0
     for i, val in enumerate(candidates):
         total = total + val
         if total == target:
             return candidates[: i + 1]
-    return False
+    return []
 
 
-def narrow_array(candidates: List[int], target: int) -> Union[int, bool]:
+def narrow_array(target: int, candidates: List[int]) -> UBoolInt:
     for i in range(len(candidates)):
-        solution = contiguous_sum(candidates[i:], target)
+        solution = find_range_that_sums_to(candidates[i:], target)
         if solution:
+            solution = cast(List[int], solution)
             return min(solution) + max(solution)
     return False
 
 
-def process(text: str) -> None:
-    lines = [int(_) for _ in lcompact(text.splitlines())]
-    ans = is_sum_in_prior_n(lines, 25)
-    assert ans == 104054607
-    print("Answer one:", ans)
+def process_one(data: List[int]) -> UBoolInt:
+    return is_not_sum_of_prior_n(data, 25)
 
-    ans2 = narrow_array(lines, ans)
-    assert ans2 == 13935797
-    print("Answer two:", ans2)
+
+def cli_main() -> None:
+    input_funcs = [splitstriplines, partial(lmap, int)]
+    data = load_and_process_input(INPUT, input_funcs)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    process_two = partial(narrow_array, answer_one)
+    # Can't run tests until after first half is solved because the second half
+    # depends on the answer to the first half.
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    process(Path("input-09.txt").read_text().strip())
-
+    cli_main()
 """
 --- Day 9: Encoding Error ---
 
