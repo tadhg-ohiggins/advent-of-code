@@ -1,203 +1,157 @@
-import pdb
-import subprocess
-from functools import partial, wraps
-from math import prod
-from pathlib import Path
-from pprint import pprint
-from string import (
-    ascii_lowercase,
-    digits as ascii_digits,
-)
-from typing import Any, Callable, List, Iterable, Optional, Union
-from toolz import (  # type: ignore
-    compose_left,
-    concat,
-    curry,
-    do,
-    excepts,
-    keyfilter,
-    pluck,
-    pipe,
-    unique,
+from functools import partial
+from typing import List
+from tutils import (
+    lfilter,
+    lmap,
+    load_and_process_input,
+    run_tests,
+    splitstriplines,
 )
 
-
-IterableS = Iterable[str]
-hexc = ["a", "b", "c", "d", "e", "f"] + list(ascii_digits)
-
-
-def toolz_pick(keep: IterableS, d: dict) -> dict:
-    return keyfilter(lambda x: x in keep, d)
-
-
-def toolz_omit(remove: IterableS, d: dict) -> dict:
-    return keyfilter(lambda x: x not in remove, d)
+DAY = "06"
+INPUT = f"input-{DAY}.txt"
+TEST = f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 6903
+ANSWER2 = 3493
 
 
-def pick(keep: IterableS, d: dict) -> dict:
-    return {k: d[k] for k in d if k in keep}
+def group_to_unanimous(group: List[str]) -> int:
+    check = lambda char: all([char in line for line in group])
+    return len(lfilter(check, set("".join(group))))
 
 
-def omit(remove: IterableS, d: dict) -> dict:
-    return {k: d[k] for k in d if k not in remove}
+def process_one(groups: List[List[str]]) -> int:
+    return sum([len(set("".join(group))) for group in groups])
 
 
-def add_debug(debug_f: Callable, orig_f: Callable) -> Callable:
-    """
-    Transforms the function such that output is passed
-    to the debug function before being returned as normal.
-
-    add_debug(print, str.upper) would return a function equivalent to:
-
-    def fn(val: str): -> str
-        result = str.upper(val)
-        print(result)
-        return result
-    """
-    do_f = partial(do, debug_f)
-    return compose_left(orig_f, do_f)
+def process_two(groups: List[List[str]]) -> int:
+    return sum(map(group_to_unanimous, groups))
 
 
-def add_debug_list(debug_f: Callable, funcs: List[Callable]) -> List[Callable]:
-    """
-    Transforms each of the functions such that the output of each is passed
-    to the debug function before being returned as normal.
-    """
-    return [add_debug(debug_f, f) for f in funcs]
-
-
-def run_process(
-    command: Union[list, str], options: Optional[dict] = None
-) -> subprocess.CompletedProcess:
-    base_opts = {"check": True, "text": True, "capture_output": True}
-    opts = options if options else {}
-    # pylint: disable=subprocess-run-check
-    # return subprocess.run(command, **{**base_opts, **opts})  # type: ignore
-    return subprocess.run(command, **(base_opts | opts))  # type: ignore
-
-
-def until_stable(func: Callable) -> Callable:
-    """
-    Repeatedly call the same function on its arguments until the result doesn't
-    change.
-
-    Not sure how to make this work in variadic cases; comparing a single result
-    to *args doesn't seem to work.
-    """
-
-    def inner(arg: Any, **kwds: Any) -> Any:
-        if func(arg, **kwds) == arg:
-            return arg
-        return inner(func(arg, **kwds))
-
-    return inner
-
-
-def oxford(lst: List[str]) -> str:
-    """
-    Turns a list into a properly-formatted list phrase.
-    ``["something"]`` becomes "something".
-    ``["thing1", "thing2"]`` becomes "thing1 and thing2".
-    ``["thing1", "thing2", "thing3"]`` becomes "thing1, thing2, and thing3".
-    ``["a", "b", "c", "d"]`` becomes "a, b, c, and d".
-    """
-    if len(lst) <= 2:
-        return " and ".join(lst)
-    return f'{", ".join(lst[:-1])}, and {lst[-1]}'
-
-
-def excepts_wrap(err: Any, err_func: Callable) -> Callable:
-    """
-    This basically means that::
-
-        @excepts_wrap(ValueError, lambda _: None)
-        def get_formatted_time(fmt: str, value: str) -> Optional[datetime]:
-            return datetime.strptime(value.strip(), fmt)
-
-        gft = get_formatted_time
-
-    With the decorator, that's broadly equivalent to this without
-    any decorator::
-
-        gft = excepts(
-            ValueError,
-            get_formatted_time,
-            lambda _: None
-        )
-
-    """
-
-    def inner_excepts_wrap(fn: Callable) -> Callable:
-        return excepts(err, fn, err_func)
-
-    return inner_excepts_wrap
-
-
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
-lpluck = compose_left(pluck, list)  # lambda k, l: [*pluck(f, l)]
-c_map = curry(map)
-c_lmap = curry(lmap)
-is_char_az = partial(lambda y, x: x in y, ascii_lowercase)
-is_char_hex = partial(lambda y, x: x in y, hexc)
-is_char_az09 = partial(lambda y, x: x in y, ascii_lowercase + ascii_digits)
-filter_str = partial(lambda f, s: "".join(filter(f, s)))
-filter_az = partial(filter_str, is_char_az)
-filter_az09 = partial(filter_str, is_char_az09)
-filter_hex = partial(filter_str, is_char_hex)
-add_pprint = partial(add_debug, pprint)
-add_pprinting = partial(lmap, add_pprint)
-lcompact = partial(lfilter, None)
-
-
-def group_to_unique(group):
-    return list(set("".join(group)))
-
-
-def group_to_unan(group):
-    return sum(
-        [1 for i in set("".join(group)) if all([i in ln for ln in group])]
-    )
-
-
-def process(text):
-    groups = [_.split("\n") for _ in text.split("\n\n")]
-    a1 = sum([len(group_to_unique(group)) for group in groups])
-    a2 = sum(map(group_to_unan, groups))
-    return a1, a2
+def cli_main() -> None:
+    input_funcs = [
+        partial(str.split, sep="\n\n"),
+        partial(lmap, splitstriplines),
+    ]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    # test = Path("test-input-00.txt").read_text().strip()
-    # test_answer = whatever
-    # assert process(test, params) == test_answer
+    cli_main()
+"""
+--- Day 6: Custom Customs ---
 
-    raw = Path("input-06.txt").read_text().strip()
-    assert process(raw) == (6903, 3493)
-    """
-    a1 = sum(
-        [
-            sum([1 for i in ascii_lowercase if all([i in ln for ln in group])])
-            for group in lcompact(
-                _.split("\n")
-                for _ in Path("input-06.txt").read_text().strip().split("\n\n")
-            )
-        ]
-    )
-    a2 = sum(
-        [
-            sum(
-                [
-                    1
-                    for i in set("".join(group))
-                    if all([i in ln for ln in group])
-                ]
-            )
-            for group in [
-                _.split("\n")
-                for _ in Path("input-06.txt").read_text().strip().split("\n\n")
-            ]
-        ]
-    )
-    print(a2)
-    """
+As your flight approaches the regional airport where you'll switch to a much
+larger plane, customs declaration forms are distributed to the passengers.
+
+The form asks a series of 26 yes-or-no questions marked a through z. All you
+need to do is identify the questions for which anyone in your group answers
+"yes". Since your group is just you, this doesn't take very long.
+
+However, the person sitting next to you seems to be experiencing a language
+barrier and asks if you can help. For each of the people in their group, you
+write down the questions for which they answer "yes", one per line. For
+example:
+
+abcx
+abcy
+abcz
+
+In this group, there are 6 questions to which anyone answered "yes": a, b, c,
+x, y, and z. (Duplicate answers to the same question don't count extra; each
+question counts at most once.)
+
+Another group asks for your help, then another, and eventually you've collected
+answers from every group on the plane (your puzzle input). Each group's answers
+are separated by a blank line, and within each group, each person's answers are
+on a single line. For example:
+
+abc
+
+a
+b
+c
+
+ab
+ac
+
+a
+a
+a
+a
+
+b
+
+This list represents answers from five groups:
+
+    The first group contains one person who answered "yes" to 3 questions: a,
+    b, and c.
+    The second group contains three people; combined, they answered "yes" to 3
+    questions: a, b, and c.
+    The third group contains two people; combined, they answered "yes" to 3
+    questions: a, b, and c.
+    The fourth group contains four people; combined, they answered "yes" to
+    only 1 question, a.
+    The last group contains one person who answered "yes" to only 1 question,
+    b.
+
+In this example, the sum of these counts is 3 + 3 + 3 + 1 + 1 = 11.
+
+For each group, count the number of questions to which anyone answered "yes".
+What is the sum of those counts?
+
+Your puzzle answer was 6903.
+
+--- Part Two ---
+
+As you finish the last group's customs declaration, you notice that you misread
+one word in the instructions:
+
+You don't need to identify the questions to which anyone answered "yes"; you
+need to identify the questions to which everyone answered "yes"!
+
+Using the same example as above:
+
+abc
+
+a
+b
+c
+
+ab
+ac
+
+a
+a
+a
+a
+
+b
+
+This list represents answers from five groups:
+
+    In the first group, everyone (all 1 person) answered "yes" to 3 questions:
+        a, b, and c.
+    In the second group, there is no question to which everyone answered "yes".
+    In the third group, everyone answered yes to only 1 question, a. Since some
+    people did not answer "yes" to b or c, they don't count.
+    In the fourth group, everyone answered yes to only 1 question, a.
+    In the fifth group, everyone (all 1 person) answered "yes" to 1 question,
+    b.
+
+In this example, the sum of these counts is 3 + 0 + 1 + 1 + 1 = 6.
+
+For each group, count the number of questions to which everyone answered "yes".
+What is the sum of those counts?
+
+Your puzzle answer was 3493.
+"""
