@@ -1,48 +1,38 @@
-import pdb
 from functools import partial, reduce
-from operator import methodcaller
-from pathlib import Path
-from string import digits as ascii_digits
-from typing import Callable
-import networkx  # type: ignore
-from toolz import (  # type: ignore
-    complement,
-    compose_left,
-    flip,
-    itemmap,
-    iterate,
-    pipe,
+from typing import List, Tuple
+from networkx import MultiDiGraph  # type: ignore
+from toolz import itemmap  # type: ignore
+from tutils import (
+    load_and_process_input,
+    run_tests,
+    splitstrip,
+    splitstriplines,
 )
 
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lcompact = partial(lfilter, None)
-splitstrip = compose_left(str.split, partial(map, str.strip), lcompact)
-make_counter = lambda: partial(next, iterate(lambda x: x + 1, 0))
+DAY = "07"
+INPUT = f"input-{DAY}.txt"
+TEST = f"test-input-{DAY}.txt"
+TA1 = 4
+TA2 = None
+ANSWER1 = 101
+ANSWER2 = 108636
 
 
-def parse(rule):
-    color, contents = rule.split(" bags contain ")
+def parse(rule: str) -> Tuple[str, str]:
+    color, contents = splitstrip(rule, "bags contain")
     return color, contents
 
 
-def parse_edges(rule, colormap, mygraph):
-    color, contents = rule.split(" bags contain ")
-    contents = contents.removesuffix(".")
-    if "no other bags" in contents:
-        return mygraph
-    for edge in splitstrip(contents, ","):
-        mygraph = add_edge(mygraph, edge, color, colormap)
-    return mygraph
-
-
-def add_nodes(mygraph, mynodes):
+def add_nodes(mygraph: MultiDiGraph, mynodes: dict) -> MultiDiGraph:
     for key, value in mynodes.items():
         if key and value:
             mygraph.add_nodes_from([(key, {"color": value})])
     return mygraph
 
 
-def add_edge(mygraph, edge, origincolor, colormap):
+def add_edge(
+    mygraph: MultiDiGraph, edge: str, origincolor: str, colormap: dict
+) -> MultiDiGraph:
     edge = reduce(str.removesuffix, [" bags", " bag"], edge)
     origincolornum = colormap.get(origincolor)
     num, tcolor = edge.split(" ", 1)
@@ -51,135 +41,74 @@ def add_edge(mygraph, edge, origincolor, colormap):
     return mygraph
 
 
-def search(mygraph, mynode, preds):
-    newpreds = list(mygraph.predecessors(mynode))
-    if not newpreds:
-        return preds
-    for pred in newpreds:
-        preds = preds + [pred] if pred not in preds else preds
-        preds = search(mygraph, pred, preds)
+def parse_edges(
+    colormap: dict, mygraph: MultiDiGraph, rule: str
+) -> MultiDiGraph:
+    color, contents = parse(rule)
+    contents = contents.removesuffix(".")
+    if "no other bags" in contents:
+        return mygraph
+    for edge in splitstrip(contents, ","):
+        mygraph = add_edge(mygraph, edge, color, colormap)
+    return mygraph
+
+
+def build_graph(rules: List[str]) -> Tuple[MultiDiGraph, dict]:
+    """
+    Rather than building the graph so that every individual bag is represented
+    by a node, and colored, and doing the calculations based on colors in the
+    graph, I did it so that every type of bag was one node, and the connections
+    between the types of bag were represented by multiple edges. This is
+    probably not the best way to do it, but it does work for these use cases.
+    """
+    nodes = [parse(rule)[0] for rule in rules]
+    nodemap = dict(enumerate(nodes))
+    color_to_node = itemmap(reversed, nodemap)
+    noded = add_nodes(MultiDiGraph(), nodemap)
+    edged = reduce(partial(parse_edges, color_to_node), rules, noded)
+    return (edged, color_to_node)
+
+
+def predecessor_search(mygraph: MultiDiGraph, mynode: str, preds: set) -> set:
+    for node in mygraph.predecessors(mynode):
+        preds = preds | {node}
+        preds = predecessor_search(mygraph, node, preds)
     return preds
 
 
-def ssearch(mygraph, mynode, total):
+def successor_search(mygraph: MultiDiGraph, mynode: str, total: int) -> int:
     total = total + 1
-    succs = list(mygraph.successors(mynode))
-    for node in succs:
+    for node in mygraph.successors(mynode):
         paths = mygraph.number_of_edges(mynode, node)
-        for _ in range(paths):
-            total = total + ssearch(mygraph, node, 0)
+        num_descendants = successor_search(mygraph, node, 0)
+        total = total + (num_descendants * paths)
     return total
 
 
-def process_by_edges(text):
-    lines = lcompact(text.splitlines())
-    nodes = lcompact([parse(rule)[0] for rule in lines])
-    nodemap = dict(enumerate(nodes))
-    color_to_node = itemmap(reversed, nodemap)
-    graph = networkx.MultiDiGraph()
-    populated = add_nodes(graph, nodemap)
-    for rule in lines:
-        populated = parse_edges(rule, color_to_node, populated)
-    totals = search(populated, color_to_node.get("shiny gold"), [])
-    assert len(totals) == 101
-    print("Answer to part one: ", len(totals))
-    totals2 = ssearch(populated, color_to_node.get("shiny gold"), 0)
-    assert totals2 - 1 == 108636
-    print("Answer to part two: ", totals2 - 1)
+def process_one(graph_and_key: Tuple[MultiDiGraph, dict]) -> int:
+    graph, target = graph_and_key[0], graph_and_key[1].get("shiny gold", "")
+    return len(predecessor_search(graph, target, set()))
 
 
-def parse_by_color(rule):
-    color, contents = splitstrip(rule, " bags contain ")
-    values = []
-    if "no other bags" in contents:
-        return color, []
-    for edge in splitstrip(contents, ","):
-        edge = reduce(str.removesuffix, [".", " bag", " bags"], edge)
-        num, value = edge.split(" ", 1)
-        values.append((int(num), value))
-    return color, values
+def process_two(graph_and_key: Tuple[MultiDiGraph, dict]) -> int:
+    graph, target = graph_and_key[0], graph_and_key[1].get("shiny gold", "")
+    return successor_search(graph, target, -1)
 
 
-def build_graph_by_color(nodes):
-    ctr = make_counter()
-    graph = networkx.DiGraph()
-    for base, targets in nodes:
-        if base not in networkx.get_node_attributes(graph, "color").values():
-            nodes = [graph.add_node(ctr(), **{"color": base})]
-        else:
-            nodes_per_color = networkx.get_node_attributes(graph, "color")
-            nodes = [k for k, v in nodes_per_color.items() if v == base]
-        for num, target in targets:
-            for node in nodes:
-                for _ in range(num):
-                    n = ctr()
-                    graph.add_node(n, **{"color": target})
-                    graph.add_edge(node, n)
-    return graph
-
-
-def search_preds(mygraph, endnodes, preds):
-    print("endnodes", endnodes)
-    for node in endnodes:
-        newpreds = list(mygraph.predecessors(node))
-        print("newpreds", newpreds, preds)
-        if not newpreds and newpreds != [None]:
-            return preds
-        for pred in newpreds:
-            preds = preds + [pred] if pred not in preds else preds
-            print(preds)
-            preds = search_preds(mygraph, [pred], preds)
-    return preds
-
-
-def process_by_colors(text):
-    lines = lcompact(text.splitlines())
-    nodes = lcompact([parse_by_color(rule) for rule in lines])
-    graph = build_graph_by_color(nodes)
-    per_color = networkx.get_node_attributes(graph, "color")
-    gold = [k for k, v in per_color.items() if v == "shiny gold"]
-    preds = search_preds(graph, gold, [])
-    pdb.set_trace()
-
-
-test_input = "\n".join(
-    [
-        "light red bags contain 1 bright white bag, 2 muted yellow bags.",
-        "dark orange bags contain 3 bright white bags, 4 muted yellow bags.",
-        "bright white bags contain 1 shiny gold bag.",
-        "muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.",
-        "shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.",
-        "dark olive bags contain 3 faded blue bags, 4 dotted black bags.",
-        "vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.",
-        "faded blue bags contain no other bags.",
-        "dotted black bags contain no other bags.",
-    ]
-)
-
-test_input2 = "\n".join(
-    [
-        "shiny gold bags contain 2 dark red bags.",
-        "dark red bags contain 2 dark orange bags.",
-        "dark orange bags contain 2 dark yellow bags.",
-        "dark yellow bags contain 2 dark green bags.",
-        "dark green bags contain 2 dark blue bags.",
-        "dark blue bags contain 2 dark violet bags.",
-        "dark violet bags contain no other bags.",
-    ]
-)
+def cli_main() -> None:
+    input_funcs = [splitstriplines, build_graph]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    # test = Path("test-input-00.txt").read_text().strip()
-    # test_answer = whatever
-    # assert process(test, params) == test_answer
-    raw = Path("input-07.txt").read_text()
-    raw = raw.strip()  # comment this out if trailing stuff is important!
-    # test_result = process(test_input)
-    # test_result2 = process(test_input2)
-    process_by_edges(raw)
-    process_by_colors(test_input)
-
+    cli_main()
 """
 --- Day 7: Handy Haversacks ---
 
