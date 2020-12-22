@@ -1,21 +1,44 @@
-from pathlib import Path
+from typing import List
+from tutils import splitstriplines, load_and_process_input, run_tests
+
+DAY = "05"
+INPUT = f"input-{DAY}.txt"
+TEST = f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 991
+ANSWER2 = 534
 
 
-def to_seat_id(bp):
+def to_seat_id(bp: str) -> int:
     seat = "".join(["0" if _ in ["F", "L"] else "1" for _ in bp])
     return int(seat, 2)
 
 
-def highest_and_missing(seats):
-    sids = sorted(map(to_seat_id, seats))
+def process_one(data: List[str]) -> int:
+    return max(map(to_seat_id, data))
+
+
+def process_two(data: List[str]) -> int:
+    sids = sorted(map(to_seat_id, data))
     missing = [i for i in range(sids[0], sids[-1]) if i not in sids][0]
-    return sids[-1], missing
+    return missing
+
+
+def cli_main() -> None:
+    input_funcs = [splitstriplines]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    raw = Path("input-05.txt").read_text().strip()
-    assert highest_and_missing(raw.splitlines()) == (991, 534)
-
+    cli_main()
 
 """
 --- Day 5: Binary Boarding ---
@@ -77,6 +100,7 @@ As a sanity check, look through your list of boarding passes. What is the
 highest seat ID on a boarding pass?
 
 Your puzzle answer was 991.
+
 --- Part Two ---
 
 Ding! The "fasten seat belt" signs have turned on. Time to find your seat.
