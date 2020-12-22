@@ -1,25 +1,24 @@
-from functools import partial
-from pathlib import Path
-from typing import List, Tuple, Union
-from toolz import compose_left, iterate  # type: ignore
+from typing import Callable, List, Tuple
+from tutils import (
+    UBoolInt,
+    load_and_process_input,
+    make_incrementer,
+    run_tests,
+    splitstrip,
+    splitstriplines,
+)
+
+DAY = "08"
+INPUT = f"input-{DAY}.txt"
+TEST = f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 1675
+ANSWER2 = 1532
 
 
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lcompact = partial(lfilter, None)
-splitstrip = compose_left(str.split, partial(map, str.strip), lcompact)
-LStr, LInt = List[str], List[int]
-
-
-def process_lines(
-    lines: LStr, current: int, total: int, seen: LInt, return_on_fail: bool
-) -> Union[bool, int]:
-    if current >= len(lines):
-        return total
-    seen = seen + [current]
-    nextindex, total = parse_line(lines[current], current, total)
-    if nextindex in seen:
-        return total if return_on_fail else False
-    return process_lines(lines, nextindex, total, seen, return_on_fail)
+LStr = List[str]
+LInt = List[int]
 
 
 def parse_line(line: str, current: int, total: int) -> Tuple[int, int]:
@@ -33,7 +32,34 @@ def parse_line(line: str, current: int, total: int) -> Tuple[int, int]:
     return nextindex, total
 
 
-def change_lines(lines: List[str], origlines: List[str], ctr) -> int:
+def process_lines(
+    lines: LStr, current: int, total: int, seen: LInt, return_on_fail: bool
+) -> UBoolInt:
+    if current >= len(lines):
+        return total
+    seen = seen + [current]
+    nextindex, total = parse_line(lines[current], current, total)
+    if nextindex in seen:
+        return total if return_on_fail else False
+    return process_lines(lines, nextindex, total, seen, return_on_fail)
+
+
+def command_swap(text: str, command_one: str, command_two: str) -> str:
+    if command_one in text:
+        return text.replace(command_one, command_two)
+    return text.replace(command_two, command_one)
+
+
+def change_lines(lines: List[str], origlines: List[str], ctr: Callable) -> int:
+    """
+    The completely naive approach: just go through the list of lines, changing
+    one at a time, until you find the change that makes the whole thing go
+    through without a loop.
+
+    The very first obvious optimization would be skip lines that don't contain
+    one of the two commands that can be swapped--right now, it runs the entire
+    set again even if the most recent run of command_swap did nothing.
+    """
     total = process_lines(lines, 0, 0, [], False)
     if total:
         return total
@@ -43,36 +69,29 @@ def change_lines(lines: List[str], origlines: List[str], ctr) -> int:
     return change_lines(newlines, origlines, ctr)
 
 
-def command_swap(text: str, command_one: str, command_two: str) -> str:
-    if command_one in text:
-        return text.replace(command_one, command_two)
-    elif command_two in text:
-        return text.replace(command_two, command_one)
-    return text
+def process_one(lines: List[str]) -> UBoolInt:
+    return process_lines(lines[:], 0, 0, [], True)
 
 
-def process(text: str) -> None:
-    origlines = lcompact(text.splitlines())
-    answer_one = process_lines(origlines, 0, 0, [], True)
-    assert answer_one == 1675
-    print("Answer one: ", answer_one)
+def process_two(lines: List[str]) -> int:
+    ctr = make_incrementer()
+    return change_lines(lines[:], lines[:], ctr)
 
-    ctr = partial(next, iterate(lambda x: x + 1, 0))
-    lines = origlines[:]
-    answer_two = change_lines(lines, lines, ctr)
-    assert answer_two == 1532
-    print("Answer two: ", answer_two)
+
+def cli_main() -> None:
+    input_funcs = [splitstriplines]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    # test = Path("test-input-00.txt").read_text().strip()
-    # test_answer = whatever
-    # assert process(test, params) == test_answer
-
-    raw = Path("input-08.txt").read_text()
-    raw = raw.strip()  # comment this out if trailing stuff is important!
-    process(raw)
-
+    cli_main()
 
 """
 --- Day 8: Handheld Halting ---
