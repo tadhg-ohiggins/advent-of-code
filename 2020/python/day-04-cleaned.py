@@ -1,96 +1,86 @@
-from pathlib import Path
-from toolz import concat  # type: ignore
+from functools import partial
+from string import digits as ascii_digits
+from typing import List
+from tutils import hexc
+from tutils import in_incl_range
+from tutils import lfilter
+from tutils import lmap
+from tutils import splitstrip
+
+from tutils import load_and_process_input
+from tutils import run_tests
 
 
-def is_valid_pw(item):
-    return (
-        item["rule_min"]
-        <= item["pw"].count(item["rule_letter"])
-        <= item["rule_max"]
-    )
+""" END HELPER FUNCTIONS """
 
 
-def is_valid_pw_two(item):
-    pw = item["pw"]
-    letter = item["rule_letter"]
-    mn = item["rule_min"]
-    mx = item["rule_max"]
-    if pw[mn - 1] == letter and pw[mx - 1] == letter:
-        return False
-    if pw[mn - 1] == letter or pw[mx - 1] == letter:
-        return True
+DAY = "04"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = 2
+TA2 = 2
+ANSWER1 = 204
+ANSWER2 = 179
+
+
+def parse_passport(data: List[str]) -> dict:
+    return dict([splitstrip(_, ":") for _ in data])
+
+
+def validate_passport_basic(pp: dict) -> bool:
+    required = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "hgt"]
+    return all([pp.get(f) for f in required])
+
+
+def check_height(text: str) -> bool:
+    if text.endswith("cm"):
+        return in_incl_range(150, 195, int(text.removesuffix("cm")))
+    if text.endswith("in"):
+        return in_incl_range(59, 76, int(text.removesuffix("in")))
     return False
 
 
-def parse_passport(text):
-    data = list(concat([_.split(" ") for _ in text.split("\n")]))
-    mydict = {}
-    for datum in data:
-        k, v = [_.strip() for _ in datum.split(":")]
-        mydict[k] = v
-    return mydict
-
-
-def check_height(text):
-    if text.endswith("cm"):
-        ht = int(text.removesuffix("cm"))
-        return ht >= 150 and ht <= 193
-    if text.endswith("in"):
-        ht = int(text.removesuffix("in"))
-        return ht >= 59 and ht <= 76
-
-
-def validate_passport(pp):
-    fields = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "cid", "hgt"]
-    required = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "hgt"]
-    hexc = [
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-    ]
-    numc = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for f in required:
-        if not pp.get(f):
-            return False
-    checks = [
-        len(pp.get("pid")) == 9,
-        all([_ in numc for _ in pp.get("pid")]),
-        2002 >= int(pp.get("byr")) >= 1920,
-        2020 >= int(pp.get("iyr")) >= 2010,
-        2030 >= int(pp.get("eyr")) >= 2020,
-        pp.get("ecl") in ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"],
-        all([_ in hexc for _ in pp.get("hcl")[1:]]),
-        pp.get("hcl")[0] == "#",
-        pp.get("hgt").endswith("cm") or pp.get("hgt").endswith("in"),
-        check_height(pp.get("hgt")),
-    ]
-    if not all(checks):
+def validate_passport_advanced(pp: dict) -> bool:
+    if not (validate_passport_basic(pp)):
         return False
-    return True
+    checks = [
+        len(pp.get("pid", "")) == 9,
+        all([_ in ascii_digits for _ in pp.get("pid", "")]),
+        in_incl_range(1920, 2002, int(pp.get("byr", 0))),
+        in_incl_range(2010, 2020, int(pp.get("iyr", 0))),
+        in_incl_range(2020, 2030, int(pp.get("eyr", 0))),
+        pp.get("ecl") in ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"],
+        all([_ in hexc for _ in pp.get("hcl", [])[1:]]),
+        pp.get("hcl", [])[0] == "#",
+        pp.get("hgt", "").endswith("cm") or pp.get("hgt", "").endswith("in"),
+        check_height(pp.get("hgt", "")),
+    ]
+    return all(checks)
 
 
-def parse_passports(text):
-    return [parse_passport(data) for data in text.split("\n\n") if data]
+def process_one(lines: List[list]) -> int:
+    passports = lmap(parse_passport, lines)
+    return len(lfilter(validate_passport_basic, passports))
+
+
+def process_two(lines: List[str]) -> int:
+    passports = lmap(parse_passport, lines)
+    return len(lfilter(validate_passport_advanced, passports))
+
+
+def cli_main() -> None:
+    input_funcs = [partial(splitstrip, sep="\n\n"), partial(lmap, splitstrip)]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    raw = Path("input-04.txt").read_text()
-    passports = parse_passports(raw)
-    valid = list(filter(validate_passport, passports))
-    print(len(valid))
+    cli_main()
 
 """
 --- Day 4: Passport Processing ---
