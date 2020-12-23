@@ -1,46 +1,27 @@
+from __future__ import annotations
 from collections import Counter
-from functools import partial
-from itertools import groupby
-from operator import itemgetter
-from pathlib import Path
-from toolz import compose_left, sliding_window  # type: ignore
+from functools import partial, reduce
+from typing import List
+from toolz import sliding_window  # type: ignore
+from tutils import (
+    lmap,
+    load_and_process_input,
+    lnoncontinuous,
+    run_tests,
+    splitstriplines,
+)
+
+DAY = "10"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = 220
+TA2 = 19208
+ANSWER1 = 2272
+ANSWER2 = 84627647627264
 
 
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
-lcompact = partial(lfilter, None)
-splitstrip = compose_left(str.split, partial(lmap, str.strip), lcompact)
-
-
-def noncontinuous(array: list[int]):
+def find_combos(length: int) -> int:
     """
-    noncontinuous([1, 2, 3, 5, 6, 8, 9, 10]) == [[1, 2, 3], [5, 6], [8, 9, 10]]
-
-    The difference between a number and its index will be stable for a
-    consecutive run, so we can group by that.
-
-    -1 for 1, 2, and 3; -2 for 5 and 6; -3 for 8, 9 and 10 in the above list.
-
-    enumerate gets us item and index, a quick x[0] - x[1] lambda gets us the
-    difference.
-
-    Once we have them in groups, we extract them into the lists of runs.
-
-    See also consecutive_groups in more_itertools, which was the basis for
-    this.
-    """
-    check = lambda x: x[0] - x[1]
-    collate = lambda x: map(itemgetter(1), list(x)[1])
-    return map(collate, groupby(enumerate(array), key=check))
-
-
-def lnoncontinuous(array: list[int]):
-    return lmap(list, noncontinuous(array))
-
-
-def find_combos(length):
-    """
-    In the data, there are no gaps of two, only gapes of one or three, between
+    In the data, there are no gaps of two, only gaps of one or three, between
     numbers in the sorted list.
     The rules are such that the number of combos are the same regardless
     of the specific numbers involved--there are the same number of combos
@@ -76,24 +57,32 @@ def find_combos(length):
     return sum(map(find_combos, [max([0, length - _]) for _ in (1, 2, 3)]))
 
 
-def process(text):
-    lines = lmap(int, lcompact(text.splitlines()))
-    adapters = sorted(lines)
-    total = [0] + adapters + [max(adapters) + 3]
-    diffs = Counter([a - b for a, b in sliding_window(2, reversed(total))])
+def incl_ends(adapters: List[int]) -> List[int]:
+    return sorted([0] + adapters + [max(adapters) + 3])
 
-    answer_one = diffs[1] * diffs[3]
-    assert answer_one == 2272
 
-    runs = Counter([len(span) for span in lnoncontinuous(total)])
+def process_one(adapters: List[int]) -> int:
+    diffs = Counter([a - b for a, b in sliding_window(2, reversed(adapters))])
+    return diffs[1] * diffs[3]
+
+
+def process_two(adapters: List[int]) -> int:
+    runs = Counter([len(span) for span in lnoncontinuous(adapters)])
     combos = {k: find_combos(k) for k in runs}
-    total = 1
-    for combo in combos:
-        total = total * combos[combo] ** runs[combo]
-    assert total == 84627647627264
+    return reduce(lambda n, c: n * combos[c] ** runs[c], combos, 1)
+
+
+def cli_main() -> None:
+    input_funcs = [splitstriplines, partial(lmap, int), incl_ends]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
     print("Answer one:", answer_one)
-    print("Answer two:", total)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    process(Path("input-10.txt").read_text().strip())
+    cli_main()
