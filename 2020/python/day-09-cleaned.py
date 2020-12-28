@@ -11,8 +11,7 @@ from tutils import (
 )
 
 DAY = "09"
-INPUT = f"input-{DAY}.txt"
-TEST = f"test-input-{DAY}.txt"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
 TA1 = None
 TA2 = None
 ANSWER1 = 104054607
@@ -25,7 +24,7 @@ def do_two_items_sum_to(candidates: List[int], target: int) -> bool:
 
 def is_not_sum_of_prior_n(numbers: List[int], limit: int) -> UBoolInt:
     """
-    Shorter but less comrehensible:
+    Shorter but less comprehensible:
 
     check = lambda item: not do_two_items_sum_to(item[:limit], item[limit])
     return nextwhere(check, sliding_window(limit + 1, numbers))
