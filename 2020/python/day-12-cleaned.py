@@ -41,8 +41,8 @@ north = lambda p, amount: Point(p.x, p.y + amount)
 south = lambda p, amount: Point(p.x, p.y - amount)
 west = lambda p, amount: Point(p.x - amount, p.y)
 east = lambda p, amount: Point(p.x + amount, p.y)
-left = lambda p, facing, amount: (facing - amount) % 360
-right = lambda p, facing, amount: (facing + amount) % 360
+left = lambda facing, amount: (facing - amount) % 360
+right = lambda facing, amount: (facing + amount) % 360
 
 
 def facing_to_direction(facing: int) -> Callable:
@@ -68,7 +68,7 @@ def handle_point(func: Callable) -> Callable:
 
 def handle_facing(func: Callable) -> Callable:
     def inner(point: Point, facing: int, amount: int) -> Tuple:
-        return point, func(point, facing, amount)
+        return point, func(facing, amount)
 
     return inner
 
