@@ -1,18 +1,15 @@
 from functools import partial
 from string import digits as ascii_digits
 from typing import List
-from tutils import hexc
-from tutils import in_incl_range
-from tutils import lfilter
-from tutils import lmap
-from tutils import splitstrip
-
-from tutils import load_and_process_input
-from tutils import run_tests
-
-
-""" END HELPER FUNCTIONS """
-
+from tutils import (
+    hexc,
+    in_incl_range,
+    lfilter,
+    lmap,
+    load_and_process_input,
+    run_tests,
+    splitstrip,
+)
 
 DAY = "04"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
@@ -26,9 +23,9 @@ def parse_passport(data: List[str]) -> dict:
     return dict([splitstrip(_, ":") for _ in data])
 
 
-def validate_passport_basic(pp: dict) -> bool:
+def validate_passport_basic(passport: dict) -> bool:
     required = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "hgt"]
-    return all([pp.get(f) for f in required])
+    return all([passport.get(f) for f in required])
 
 
 def check_height(text: str) -> bool:
@@ -51,24 +48,25 @@ def validate_passport_advanced(pp: dict) -> bool:
         pp.get("ecl") in ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"],
         all([_ in hexc for _ in pp.get("hcl", [])[1:]]),
         pp.get("hcl", [])[0] == "#",
-        pp.get("hgt", "").endswith("cm") or pp.get("hgt", "").endswith("in"),
         check_height(pp.get("hgt", "")),
     ]
     return all(checks)
 
 
-def process_one(lines: List[list]) -> int:
-    passports = lmap(parse_passport, lines)
+def process_one(passports: List[dict]) -> int:
     return len(lfilter(validate_passport_basic, passports))
 
 
-def process_two(lines: List[str]) -> int:
-    passports = lmap(parse_passport, lines)
+def process_two(passports: List[dict]) -> int:
     return len(lfilter(validate_passport_advanced, passports))
 
 
 def cli_main() -> None:
-    input_funcs = [partial(splitstrip, sep="\n\n"), partial(lmap, splitstrip)]
+    input_funcs = [
+        partial(splitstrip, sep="\n\n"),
+        partial(lmap, splitstrip),
+        partial(lmap, parse_passport),
+    ]
     data = load_and_process_input(INPUT, input_funcs)
     run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
     answer_one = process_one(data)
