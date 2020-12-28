@@ -28,7 +28,8 @@ class Point:
         return Point(x=self.x * other, y=self.y * other)
 
     def qct(self, qcts: int) -> Point:
-        # quarter-circle turn, deosil positive, widdershins negative.
+        # quarter-circle turn around origin, deosil positive,
+        # widdershins negative.
         procs = [lambda p: Point(p.y, -p.x)] * (qcts % 4)
         return compose_left(*procs)(Point(self.x, self.y))
 
@@ -40,8 +41,8 @@ north = lambda p, amount: Point(p.x, p.y + amount)
 south = lambda p, amount: Point(p.x, p.y - amount)
 west = lambda p, amount: Point(p.x - amount, p.y)
 east = lambda p, amount: Point(p.x + amount, p.y)
-rotateleft = lambda p, amount: p.qct(-(amount // 90))
-rotateright = lambda p, amount: p.qct(amount // 90)
+left = lambda p, facing, amount: (facing - amount) % 360
+right = lambda p, facing, amount: (facing + amount) % 360
 
 
 def facing_to_direction(facing: int) -> Callable:
@@ -54,22 +55,8 @@ def facing_to_direction(facing: int) -> Callable:
     return dirs[facing]
 
 
-def forward(point: Point, facing: int, amount: int) -> Tuple[Point, int]:
+def advance(point: Point, facing: int, amount: int) -> Tuple[Point, int]:
     return facing_to_direction(facing)(point, amount), facing
-
-
-def forward2(
-    point: Point, waypoint: Point, amount: int
-) -> Tuple[Point, Point]:
-    return (point + (waypoint * amount)), waypoint
-
-
-def left(_: Point, facing: int, amount: int) -> int:
-    return (facing - amount) % 360
-
-
-def right(_: Point, facing: int, amount: int) -> int:
-    return (facing + amount) % 360
 
 
 def handle_point(func: Callable) -> Callable:
@@ -86,13 +73,6 @@ def handle_facing(func: Callable) -> Callable:
     return inner
 
 
-def handle_waypoint(func: Callable) -> Callable:
-    def inner(point: Point, waypoint: Point, amount: int) -> Tuple:
-        return point, func(waypoint, amount)
-
-    return inner
-
-
 def process_one(lines: List[str]) -> Any:
     point, facing = Point(x=0, y=0), 90
     moves: Dict[str, Callable] = {
@@ -102,12 +82,24 @@ def process_one(lines: List[str]) -> Any:
         "W": handle_point(west),
         "L": handle_facing(left),
         "R": handle_facing(right),
-        "F": forward,
+        "F": advance,
     }
 
     interpreter = lambda p_f, i: moves[i[0]](*p_f, int(i[1:]))
     final_point, _ = reduce(interpreter, lines, (point, facing))
     return final_point.manhattan_distance()
+
+
+def handle_waypoint(func: Callable) -> Callable:
+    def inner(point: Point, waypoint: Point, amount: int) -> Tuple:
+        return point, func(waypoint, amount)
+
+    return inner
+
+
+go_to_waypoint = lambda pt, waypt, amt: (pt + (waypt * amt), waypt)
+rotateleft = lambda p, amount: p.qct(-(amount // 90))
+rotateright = lambda p, amount: p.qct(amount // 90)
 
 
 def process_two(lines: List[str]) -> Any:
@@ -119,7 +111,7 @@ def process_two(lines: List[str]) -> Any:
         "W": handle_waypoint(west),
         "L": handle_waypoint(rotateleft),
         "R": handle_waypoint(rotateright),
-        "F": forward2,
+        "F": go_to_waypoint,
     }
     interpreter = lambda p_w, i: moves[i[0]](*p_w, int(i[1:]))
     final_point, _ = reduce(interpreter, lines, (point, waypoint))
