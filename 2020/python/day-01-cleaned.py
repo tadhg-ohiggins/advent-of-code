@@ -1,61 +1,19 @@
 from functools import partial
-from pathlib import Path
-from typing import Any, Callable, List, Optional
-from toolz import (  # type: ignore
-    compose_left,
+from typing import List
+from tutils import (
+    OInt,
+    lmap,
+    load_and_process_input,
+    run_tests,
+    splitstriplines,
 )
 
-# pylint: disable=unsubscriptable-object
-OInt = Optional[int]
-# pylint: enable=unsubscriptable-object
-
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lcompact = partial(lfilter, None)
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
-lstrip = partial(lmap, str.strip)
-splitstriplines = compose_left(str.splitlines, lstrip, lcompact)
-
-
-def load_and_process_input(fname: str, input_funcs: List[Callable]) -> Any:
-    processinput = partial(process_input, input_funcs)
-    return compose_left(load_input, processinput)(fname)
-
-
-def process_input(input_funcs: List[Callable], text: str) -> Any:
-    return compose_left(*input_funcs)(text)
-
-
-def load_input(fname: str) -> str:
-    return Path(fname).read_text().strip()
-
-
-def tests(testfile: str, input_funcs: List[Callable]) -> Any:
-    testdata = load_and_process_input(testfile, input_funcs)
-    result = process_one(testdata)
-    assert result == TESTANSWER_ONE
-    print("Test answer one:", result)
-    if ANSWER_ONE is not None:
-        result_two = process_two(testdata)
-        if TESTANSWER_TWO is not None:
-            assert result_two == TESTANSWER_TWO
-        print("Test answer two:", result_two)
-
-
-def run_tests(testfile: str, input_funcs: List[Callable]) -> None:
-    if Path(testfile).exists():
-        tests(testfile, input_funcs)
-
-
-""" END HELPER FUNCTIONS """
-
-
 DAY = "01"
-INPUT = f"input-{DAY}.txt"
-TEST = f"test-input-{DAY}.txt"
-TESTANSWER_ONE = 514579
-TESTANSWER_TWO = 241861950
-ANSWER_ONE = 357504
-ANSWER_TWO = 12747392
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = 514579
+TA2 = 241861950
+ANSWER1 = 357504
+ANSWER2 = 12747392
 
 
 def find_totals(target: int, array: List[int]) -> OInt:
@@ -65,11 +23,11 @@ def find_totals(target: int, array: List[int]) -> OInt:
     return None
 
 
-def process_one(data: Any) -> Any:
+def process_one(data: List[int]) -> OInt:
     return find_totals(2020, data)
 
 
-def process_two(data: Any) -> Any:
+def process_two(data: List[int]) -> OInt:
     for item in data:
         if result := find_totals(2020 - item, data):
             return result * item
@@ -79,12 +37,12 @@ def process_two(data: Any) -> Any:
 def cli_main() -> None:
     input_funcs = [splitstriplines, partial(lmap, int)]
     data = load_and_process_input(INPUT, input_funcs)
-    run_tests(TEST, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
     answer_one = process_one(data)
-    assert answer_one == ANSWER_ONE
+    assert answer_one == ANSWER1
     print("Answer one:", answer_one)
     answer_two = process_two(data)
-    assert answer_two == ANSWER_TWO
+    assert answer_two == ANSWER2
     print("Answer two:", answer_two)
 
 
