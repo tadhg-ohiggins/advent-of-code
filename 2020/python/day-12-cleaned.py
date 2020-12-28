@@ -5,10 +5,6 @@ from typing import Any, Callable, Dict, List, Tuple
 from toolz import compose_left  # type: ignore
 from tutils import splitstriplines, load_and_process_input, run_tests
 
-
-""" END HELPER FUNCTIONS """
-
-
 DAY = "12"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
 TA1 = 25
