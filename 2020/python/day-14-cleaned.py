@@ -13,8 +13,8 @@ from tutils import (
 
 DAY = "14"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
-TA1 = None
-TA2 = None
+TA1 = 165
+TA2 = 208
 ANSWER1 = 12408060320841
 ANSWER2 = 4466434626828
 
@@ -74,6 +74,7 @@ def apply_mask2(mask: str, registers: dict, command: dict) -> dict:
     address, value = list(int_to_36bit(command["r"])), command["v"]
     masked = [b if b in ("1", "X") else address[i] for i, b in enumerate(mask)]
 
+    # This iterative version is faster than a dict comprehension:
     for addr in generate_combination_addresses(masked):
         registers[int(addr, 2)] = value
     return registers
