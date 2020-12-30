@@ -3,8 +3,8 @@ import subprocess
 from collections import Counter
 from functools import partial, reduce, wraps
 from itertools import count, groupby
-from math import lcm, prod
-from operator import itemgetter
+from math import lcm
+from operator import itemgetter, mul
 from pathlib import Path
 from pprint import pprint
 from string import (
@@ -249,11 +249,64 @@ def process_two(data, start=None, limit=None):
                 assert False
 
 
+def p3(data):
+    blines = [int(_) if _ != "x" else _ for _ in data[1].split(",")]
+    targets = [(item, i) for i, item in enumerate(blines) if item != "x"]
+    # lowest = lcm(*[_[0] for _ in targets])
+    numbers = [_[0] for _ in targets]
+    offsets = [_[1] for _ in targets]
+    # total = reduce(mul, numbers, 1)
+    subtract = chinese_remainder(numbers, offsets)
+    mult = reduce(mul, numbers)
+    # print(mult)
+    # print(subtract)
+    return mult - subtract
+    """
+    The above circuitous approach just happened to work; I had the remainders
+    inverted here (if 13 departs one minute after 7, its remainder is -1, or
+    12, not 1). With the above, if you multiply them all together and then
+    subtract the chinese remainder theorem result with the reversed remainders,
+    you get the same as if you just ran the theorem on the correct
+    remainders.
+    """
+    running = 1
+    # return total - subtract
+
+    for target, offset in targets:
+        running = (target - offset) * running
+        print(running)
+    return running  # - subtract
+
+
 def process_one(data):
     target = int(data[0])
     nums = [int(_) for _ in data[1].split(",") if _ != "x"]
     bst = sorted([earliest(target, num) for num in nums], key=itemgetter(1))[0]
     return bst[0] * (bst[1] - target)
+
+
+def chinese_remainder(n, a):
+
+    total = 0
+    prod = reduce(lambda a, b: a * b, n)
+    for n_i, a_i in zip(n, a):
+        p = prod // n_i
+        total += a_i * mul_inv(p, n_i) * p
+    return total % prod
+
+
+def mul_inv(a, b):
+    b0 = b
+    x0, x1 = 0, 1
+    if b == 1:
+        return 1
+    while a > 1:
+        q = a // b
+        a, b = b, a % b
+        x0, x1 = x1 - q * x0, x0
+    if x1 < 0:
+        x1 += b0
+    return x1
 
 
 def process(text):
@@ -263,24 +316,32 @@ def process(text):
     answer_one = process_one(lines)
     testanswertwo = testprocesstwo()
     examples = [
-        (["939", "7,13,x,x,59,x,31,19"], 1068781),
-        (["", "17,x,13,19"], 3417),
-        (["", "67,x,7,59,61"], 779210),
-        (["", "67,7,x,59,61"], 1261476),
-        (["", "1789,37,47,1889"], 1202161486),
+        # (["939", "7,13"], 1068781),
+        (["939", "7,13,59"], 77),
+        # (["939", "7,13,x,x,59,x,31,19"], 1068781),
+        # (["939", "7,13,x,x,59,x,31,19"], 1068781),
+        # (["", "17,x,13,19"], 3417),
+        # (["", "67,x,7,59,61"], 779210),
+        # (["", "67,7,x,59,61"], 1261476),
+        # (["", "1789,37,47,1889"], 1202161486),
     ]
     for data, expected in []:
         print(data)
         if expected != 1202161486:
-            answer = process_two(data, limit=expected)
-            print(answer)
+            # answer = process_two(data, limit=expected)
+            answer = p3(data)
+
         else:
             answer = process_two(data, start=1202000000, limit=expected)
-        assert answer == expected
         print(answer)
+        # assert answer == expected
 
     # a2 = process_two(lines)
-    a2 = process_two(lines)
+    # a2 = process_two(lines, start=99999999986266)
+    a3 = p3(examples[0][0])
+    a2 = process_two(examples[0][0])
+    a4 = p3(lines)
+
     pdb.set_trace()
     return
 
