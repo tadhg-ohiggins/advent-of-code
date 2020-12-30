@@ -273,13 +273,14 @@ def process(text):
         print(data)
         if expected != 1202161486:
             answer = process_two(data, limit=expected)
+            print(answer)
         else:
             answer = process_two(data, start=1202000000, limit=expected)
         assert answer == expected
         print(answer)
 
     # a2 = process_two(lines)
-    a2 = process_two(lines, start=99999999986266)
+    a2 = process_two(lines)
     pdb.set_trace()
     return
 
