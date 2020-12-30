@@ -82,8 +82,7 @@ from tutils import run_tests
 
 
 DAY = "00"
-INPUT = f"input-{DAY}.txt"
-TEST = f"test-input-{DAY}.txt"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
 TA1 = None
 TA2 = None
 ANSWER1 = None

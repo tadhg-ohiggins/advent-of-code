@@ -18,12 +18,14 @@ from typing import (
     Iterable,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Union,
 )
 
 
 from toolz import (  # type: ignore
+    accumulate,
     compose_left,
     concat,
     curry,
@@ -42,7 +44,13 @@ from toolz import (  # type: ignore
 IterableS = Iterable[str]
 OInt = Optional[int]
 ODict = Optional[dict]
+OList = Optional[List]
+OSet = Optional[Set]
+UBoolInt = Union[bool, int]
+UBoolList = Union[bool, list]
 UListStr = Union[list, str]
+UCall = Union[Callable, partial]
+UListCall = Union[List[UCall], List[Callable], List[partial]]
 # pylint: enable=unsubscriptable-object
 hexc = ["a", "b", "c", "d", "e", "f"] + list(ascii_digits)
 
@@ -203,7 +211,14 @@ filter_az09 = partial(filter_str, is_char_az09)
 filter_hex = partial(filter_str, is_char_hex)
 add_pprint = partial(add_debug, pprint)
 add_pprinting = partial(lmap, add_pprint)
-make_incrementer = lambda start=0, step=1: partial(next, count(start, step))
+
+
+def make_incrementer(start: int = 0, step: int = 1) -> Callable:
+    return partial(next, count(start, step))
+
+
+def in_incl_range(lower: float, upper: float, candidate: float) -> bool:
+    return lower <= candidate <= upper
 
 
 def lnoncontinuous(array: List[int]) -> List[List[int]]:
@@ -218,7 +233,18 @@ def adjacent_transforms(
     return lfilter(not_origin, adj) if omit_origin else adj
 
 
-def load_and_process_input(fname: str, input_funcs: List[Callable]) -> Any:
+def make_list(arr: Any) -> List:
+    return [*arr] if isinstance(arr, list) else [arr]
+
+
+def list_accumulator(itr: Iterable) -> Iterable[List]:
+    # list(list_accumulator([1, 2, 3]) -> [[1], [1, 2], [1, 2, 3]]
+    return filter(
+        None, accumulate(lambda a, b: make_list(a) + make_list(b), itr, [])
+    )
+
+
+def load_and_process_input(fname: str, input_funcs: UListCall) -> Any:
     processinput = partial(process_input, input_funcs)
     return compose_left(load_input, processinput)(fname)
 
@@ -236,18 +262,18 @@ def tests(
     tanswer_one: Any,
     tanswer_two: Any,
     answer_one: Any,
-    input_funcs: List[Callable],
-    process_one: Callable,
-    process_two: Callable,
+    input_funcs: UListCall,
+    process_1: Callable,
+    process_2: Callable,
 ) -> Any:
     testdata = load_and_process_input(testfile, input_funcs)
-    result = process_one(testdata)
+    result = process_1(testdata)
     if result != tanswer_one:
         pdb.set_trace()
     assert result == tanswer_one
     print("Test answer one:", result)
     if answer_one is not None:
-        result_two = process_two(testdata)
+        result_two = process_2(testdata)
         if tanswer_two is not None:
             if result_two != tanswer_two:
                 pdb.set_trace()
@@ -260,9 +286,9 @@ def run_tests(
     tanswer_one: Any,
     tanswer_two: Any,
     answer_one: Any,
-    input_funcs: List[Callable],
-    process_one: Callable,
-    process_two: Callable,
+    input_funcs: UListCall,
+    process_1: Callable,
+    process_2: Callable,
 ) -> None:
     if Path(testfile).exists():
         tests(
@@ -271,52 +297,6 @@ def run_tests(
             tanswer_two,
             answer_one,
             input_funcs,
-            process_one,
-            process_two,
+            process_1,
+            process_2,
         )
-
-
-""" END HELPER FUNCTIONS """
-
-
-DAY = "00"
-INPUT = f"input-{DAY}.txt"
-TEST = f"test-input-{DAY}.txt"
-TESTANSWER_ONE = None
-TESTANSWER_TWO = None
-ANSWER_ONE = None
-ANSWER_TWO = None
-
-
-def process_one(data: Any) -> Any:
-    pdb.set_trace()
-    return
-
-
-def process_two(data: Any) -> Any:
-    pdb.set_trace()
-    return
-
-
-def cli_main() -> None:
-    input_funcs = [splitstriplines]
-    data = load_and_process_input(INPUT, input_funcs)
-    run_tests(TEST, input_funcs)
-    answer_one = process_one(data)
-    if ANSWER_ONE is not None:
-        if answer_one != ANSWER_ONE:
-            pdb.set_trace()
-
-        assert answer_one == ANSWER_ONE
-    print("Answer one:", answer_one)
-    if ANSWER_ONE is not None:
-        answer_two = process_two(data)
-        if ANSWER_TWO is not None:
-            if answer_two != ANSWER_TWO:
-                pdb.set_trace()
-            assert answer_two == ANSWER_TWO
-        print("Answer two:", answer_two)
-
-
-if __name__ == "__main__":
-    cli_main()
