@@ -87,6 +87,7 @@ def modular_inverse(factor: int, mod: int) -> int:
     """
     q, x, _ = extended_euclidean(factor, mod)
     if q != 1:
+        # There is no modular inverse
         assert False
     return x % mod
 
