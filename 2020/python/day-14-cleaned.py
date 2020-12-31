@@ -63,6 +63,8 @@ def generate_combination_addresses(base_address: List[str]) -> Iterable[str]:
     xcount = base_address.count("X")
     if not xcount:
         return ["".join(base_address)]
+    if xcount > 16:
+        raise ValueError("Set of addresses is larger than 2**16.")
     combinations = product(*[[0, 1]] * xcount)
     # For each X, replace it with the correspondiing bit from the combo:
     replace_x = lambda x, y: x.replace("X", str(y), 1)
