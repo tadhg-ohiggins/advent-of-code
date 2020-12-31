@@ -13,8 +13,8 @@ from tutils import (
 
 DAY = "14"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
-TA1 = None
-TA2 = None
+TA1 = 165
+TA2 = 208
 ANSWER1 = 12408060320841
 ANSWER2 = 4466434626828
 

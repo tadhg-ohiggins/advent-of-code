@@ -1,73 +1,32 @@
 from collections import defaultdict
 from functools import partial, reduce
 from operator import mul
-from pathlib import Path
-from typing import Any, Callable, List, Iterable, Tuple
+from typing import Callable, List, Tuple
 from more_itertools import partition
 from toolz import (  # type: ignore
     compose_left,
     concat,
-    curry,
     keyfilter,
     valfilter,
     valmap,
 )
-
-
-IterableS = Iterable[str]
-
-
-def omit(remove: IterableS, d: dict) -> dict:
-    return {k: d[k] for k in d if k not in remove}
-
-
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
-c_map = curry(map)
-c_lmap = curry(lmap)
-lcompact = partial(lfilter, None)
-lstrip = partial(lmap, str.strip)
-splitstrip = compose_left(str.split, lstrip, lcompact)
-splitstriplines = compose_left(str.splitlines, lstrip, lcompact)
-seq_to_dict = compose_left(lmap, dict)
-
-
-def split_to_dict(seq: List, **kwds: Any) -> dict:
-    return seq_to_dict(partial(splitstrip, **kwds), seq)
-
-
-testdata1 = "\n".join(
-    [
-        "class: 1-3 or 5-7",
-        "row: 6-11 or 33-44",
-        "seat: 13-40 or 45-50",
-        "",
-        "your ticket:",
-        "7,1,14",
-        "",
-        "nearby tickets:",
-        "7,3,47",
-        "40,4,50",
-        "55,2,20",
-        "38,6,12",
-    ]
+from tutils import (
+    c_lmap,
+    lfilter,
+    lmap,
+    load_and_process_input,
+    run_tests,
+    split_to_dict,
+    splitstrip,
+    splitstriplines,
 )
 
-testdata2 = "\n".join(
-    [
-        "class: 0-1 or 4-19",
-        "row: 0-5 or 8-19",
-        "seat: 0-13 or 16-19",
-        "",
-        "your ticket:",
-        "11,12,13",
-        "",
-        "nearby tickets:",
-        "3,9,18",
-        "15,1,5",
-        "5,14,9",
-    ]
-)
+DAY = "16"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = 71
+TA2 = 1716
+ANSWER1 = 23115
+ANSWER2 = 239727793813
 
 
 def parse_rules(text: str) -> dict:
@@ -113,7 +72,7 @@ def validate_tickets(rules: dict, nearby: List[str]) -> Tuple:
 
 
 def validate_ticket(rules: dict, ticket: List[int]) -> Tuple[bool, List, List]:
-    check = lambda n: is_num_in_any_valid_range(rules, n)
+    check = partial(is_num_in_any_valid_range, rules)
     invalid_nums, valid_nums = lmap(list, partition(check, ticket))
     valid = not invalid_nums
     return valid, valid_nums, invalid_nums
@@ -139,11 +98,7 @@ def process_input(text: str) -> Tuple:
     return (drules, lyours, lnearby)
 
 
-def load_input(fname: str) -> str:
-    return Path(fname).read_text().strip()
-
-
-def process(data: Tuple) -> int:
+def process_one(data: Tuple) -> int:
     rules, _, nearby = data
     invalid_values = validate_tickets(rules, nearby)[-1]
     return sum(invalid_values)
@@ -174,7 +129,7 @@ def interpret_tickets(rules: dict, tickets: List[List[int]]) -> dict:
     return solve_mapping(rules, mapping)
 
 
-def process2(
+def process_two(
     data: Tuple, fieldfunc: Callable = lambda x: x.startswith("departure")
 ) -> int:
     rules, yours, nearby = data
@@ -187,20 +142,15 @@ def process2(
 
 
 def cli_main() -> None:
-    testanswer1 = compose_left(process_input, process)(testdata1)
-    assert testanswer1 == 71
-
-    data = compose_left(load_input, process_input)("input-16.txt")
-
-    answer_one = process(data)
-    assert answer_one == 23115
+    input_funcs = [process_input]
+    data = load_and_process_input(INPUT, input_funcs)
+    tprocess2 = partial(process_two, fieldfunc=lambda x: True)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, tprocess2)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
     print("Answer one:", answer_one)
-
-    testanswer2 = process2(process_input(testdata2), fieldfunc=lambda x: True)
-    assert testanswer2 == 1716
-
-    answer_two = process2(data)
-    assert answer_two == 239727793813
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
     print("Answer two:", answer_two)
 
 

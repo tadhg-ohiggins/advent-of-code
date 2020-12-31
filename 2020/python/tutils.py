@@ -257,6 +257,20 @@ def process_input(input_funcs: List[Callable], text: str) -> Any:
     return compose_left(*input_funcs)(text)
 
 
+def test(
+    testfile: str,
+    answer: Any,
+    input_funcs: UListCall,
+    process: Callable,
+    count: int,
+) -> None:
+    testdata = load_and_process_input(testfile, input_funcs)
+    result = process(testdata)
+    if result != answer:
+        pdb.set_trace()
+    print(f"Test answer {count}:", result)
+
+
 def tests(
     testfile: str,
     tanswer_one: Any,
@@ -291,12 +305,13 @@ def run_tests(
     process_2: Callable,
 ) -> None:
     if Path(testfile).exists():
-        tests(
-            testfile,
-            tanswer_one,
-            tanswer_two,
-            answer_one,
-            input_funcs,
-            process_1,
-            process_2,
-        )
+        test(testfile, tanswer_one, input_funcs, process_1, 1)
+        if answer_one is not None and tanswer_two is not None:
+            test(testfile, tanswer_two, input_funcs, process_2, 2)
+    else:
+        testfile_one = f"{Path(testfile).stem}-{1}.txt"
+        testfile_two = f"{Path(testfile).stem}-{2}.txt"
+        if Path(testfile_one).exists():
+            test(testfile_one, tanswer_one, input_funcs, process_1, 1)
+        if Path(testfile_two).exists():
+            test(testfile_two, tanswer_two, input_funcs, process_2, 2)
