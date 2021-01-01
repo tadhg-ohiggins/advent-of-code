@@ -46,8 +46,8 @@ def restore_symmetry(
     dimension, with the appropriate combinations where there are multiple
     dimensions involved.
 
-    restore_symmetry((2, 3), (0, 0, 1, 1)) == {
-        (0, 0, -1, -1), (0, 0, 1, -1), (0, 0, -1, 1)
+    restore_symmetry((2, 3), (1, 1, 1, 1)) == {
+        (1, 1, -1, -1), (1, 1, 1, -1), (1, 1, -1, 1)
     }
 
     """
@@ -182,6 +182,7 @@ following rules:
 
     If a cube is active and exactly 2 or 3 of its neighbors are also active,
     the cube remains active. Otherwise, the cube becomes inactive.
+
     If a cube is inactive but exactly 3 of its neighbors are active, the cube
     becomes active. Otherwise, the cube remains inactive.
 
