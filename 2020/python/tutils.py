@@ -50,6 +50,7 @@ UBoolInt = Union[bool, int]
 UBoolList = Union[bool, list]
 UListStr = Union[list, str]
 UCall = Union[Callable, partial]
+OUCall = Optional[UCall]
 UListCall = Union[List[UCall], List[Callable], List[partial]]
 # pylint: enable=unsubscriptable-object
 hexc = ["a", "b", "c", "d", "e", "f"] + list(ascii_digits)
@@ -231,6 +232,31 @@ def adjacent_transforms(
     adj = product([-1, 0, 1], repeat=dimensions)
     not_origin = lambda x: not all([_ == 0 for _ in x])
     return lfilter(not_origin, adj) if omit_origin else adj
+
+
+def get_min_max_bounds_from_coords(
+    coords: Iterable[Tuple],
+) -> Tuple[List[int], List[int]]:
+    dimensions = len(next(iter(coords)))
+    minimums, maximums = [0] * dimensions, [0] * dimensions
+
+    # AFAICT an iterative approach is faster than recursive approaches
+    for point in coords:
+        for i, number in enumerate(point):
+            if number > maximums[i]:
+                maximums[i] = number
+            if number < minimums[i]:
+                minimums[i] = number
+    return minimums, maximums
+
+
+def generate_bounded_coords(
+    minimums: List[int], maximums: List[int]
+) -> Iterable[Tuple]:
+    # In order to be used as the upper bounds for range, the values in maximums
+    # need to be one higher:
+    ranges = (range(*_) for _ in zip(minimums, [_ + 1 for _ in maximums]))
+    return product(*ranges)
 
 
 def make_list(arr: Any) -> List:

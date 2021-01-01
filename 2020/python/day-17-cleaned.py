@@ -1,13 +1,11 @@
-import datetime
 from functools import partial
 from itertools import product
-from typing import FrozenSet, List, Iterable, Tuple
+from typing import FrozenSet, List, Tuple
 from toolz import compose_left  # type: ignore
 from tutils import (
     generate_bounded_coords,
     get_min_max_bounds_from_coords,
     lfilter,
-    lmap,
     splitstriplines,
     adjacent_transforms,
     load_and_process_input,
@@ -36,32 +34,8 @@ def lines_to_points(lines: List[str]) -> FrozenSet[Tuple]:
     return frozenset(points_on)
 
 
-def addtuple(t1: Tuple, t2: Tuple) -> Tuple:
-    return tuple(lmap(sum, zip(t1, t2)))
-
-
-def xget_ranges(points_on: FrozenSet[Tuple]) -> Iterable:
-    """
-    Given a set of coordinates in n dimensions, return the ranges for each
-    dimension that give you the max and min in each dimension for possible
-    neighbors (where neighbors are one unit away in any dimension.
-    """
-    dimensions = len(next(iter(points_on)))
-    minimums = [0] * dimensions
-    maximums = [0] * dimensions
-    # I think the imperative way to do this is faster than the functional
-    # approaches I can come up with:
-    for point in points_on:
-        # for i, number in enumerate(astuple(point)):
-        for i, number in enumerate(point):
-            if number > maximums[i]:
-                maximums[i] = number
-            if number < minimums[i]:
-                minimums[i] = number
-    new_minimums = [_ - 1 for _ in minimums]
-    new_maximums = [_ + 2 for _ in maximums]  # extra increment to account
-    # for range not being inclusive at the high end
-    return (range(*_) for _ in zip(new_minimums, new_maximums))
+def addtuple(t1: Tuple[int, ...], t2: Tuple[int, ...]) -> Tuple[int, ...]:
+    return tuple(map(sum, zip(t1, t2)))
 
 
 def restore_symmetry(
@@ -77,20 +51,19 @@ def restore_symmetry(
     }
 
     """
-    if all([point[_] == 0 for _ in dimensional_ordinals]):
+    if all([point[n] == 0 for n in dimensional_ordinals]):
         return frozenset()
 
     new_points = set()
-    num_extra_dims = len(dimensional_ordinals)
-    base_mods = product([1, -1], repeat=num_extra_dims)
+    base_mods = product([1, -1], repeat=len(dimensional_ordinals))
     mods = lfilter(lambda m: not all([x >= 0 for x in m]), base_mods)
     for mod in mods:
         temp_point = [*point]
         for i, ordinal in enumerate(dimensional_ordinals):
             if point[ordinal] > 0:
                 temp_point[ordinal] = mod[i] * temp_point[ordinal]
-        if tuple(temp_point) != point:
-            new_points.add(tuple(temp_point))
+
+        new_points.add(tuple(temp_point))
 
     return frozenset(new_points)
 
@@ -106,11 +79,12 @@ def cycle(
     calculated.
     We're lazy and assume that symmetry only occurs on either side of
     zero--this is true in the data we have, which is symmetrical at the start
-    for the z and w dimensions.  This makes it easy to exclude the negative
-    values for those dimentions when we generate the boundaries for the set of
-    points to be considered after getting the current bounds from
-    get_min_max_bounds_from_coords and expanding by one--we then floor all the
-    minimum bounds at zero for the symmetrical dimensions.
+    for the z and w dimensions.
+    This makes it easy to exclude the negative values for those dimensions when
+    we generate the boundaries for the set of points to be considered after
+    getting the current bounds from get_min_max_bounds_from_coords and
+    expanding by one--we then floor all the minimum bounds at zero for the
+    symmetrical dimensions.
     After determining whether a point is active, we also add the versions of
     that point that exist on the negative sides for the symmetrical dimensions.
     """
@@ -118,45 +92,31 @@ def cycle(
     dimensions = len(next(iter(points_on)))
     transforms = adjacent_transforms(dimensions)
     minimums, maximums = get_min_max_bounds_from_coords(points_on)
-    new_minimums = [_ - 1 for _ in minimums]
-    new_maximums = [_ + 1 for _ in maximums]  # extra increment to account
+    minimums = [_ - 1 for _ in minimums]
+    maximums = [_ + 1 for _ in maximums]
     # Exclude negative values in the symmetrical dimensions:
     for sd in symmetrical_dimensions:
-        new_minimums[sd] = max([0, new_minimums[sd]])
-    products = generate_bounded_coords(new_minimums, new_maximums)
+        minimums[sd] = max([0, minimums[sd]])
+    products = generate_bounded_coords(minimums, maximums)
     for ppoint in products:
         neighbor_candidates = {addtuple(ppoint, tform) for tform in transforms}
         neighbors = neighbor_candidates.intersection(points_on)
-        add = False
+        active = False
         if len(neighbors) == 3:
-            add = True
+            active = True
         elif len(neighbors) == 2 and ppoint in points_on:
-            add = True
-        if add:
+            active = True
+        if active:
             new_points.add(ppoint)
-            # Add in the symmetrical points with negative values
+            # Add the symmetrical points with negative values:
             for p in restore_symmetry(symmetrical_dimensions, ppoint):
                 new_points.add(p)
 
     return frozenset(new_points)
 
 
-def xcycle(points_on: FrozenSet[Tuple]) -> FrozenSet[Tuple]:
-    new_points = set()
-    dimensions = len(next(iter(points_on)))
-    transforms = adjacent_transforms(dimensions)
-    products = product(*xget_ranges(points_on))
-    for ppoint in products:
-        neighbor_candidates = {addtuple(ppoint, tform) for tform in transforms}
-        neighbors = neighbor_candidates.intersection(points_on)
-        if len(neighbors) == 3:
-            new_points.add(ppoint)
-        elif len(neighbors) == 2 and ppoint in points_on:
-            new_points.add(ppoint)
-    return frozenset(new_points)
-
-
 def process_one(points_on: FrozenSet[Tuple]) -> int:
+    # We know there's symmetry if all the values for a dimension are the same:
     sd = [i for i, vals in enumerate(zip(*points_on)) if len(set(vals)) == 1]
     cycle_one = partial(cycle, symmetrical_dimensions=tuple(sd))
     return len(compose_left(*([cycle_one] * 6))(points_on))
