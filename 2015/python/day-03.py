@@ -1,59 +1,72 @@
-from functools import partial, wraps
-from pathlib import Path
-from toolz import unique  # type: ignore
+from __future__ import annotations
+from tutils import Point
+from tutils import partial
+from tutils import reduce
+from tutils import Any
+from tutils import unique
+from tutils import mapcat
+
+from tutils import load_and_process_input
+from tutils import run_tests
 
 
-def move(coords, direction):
-    if direction == "^":
-        return [coords[0] + 1, coords[1]]
-    if direction == "v":
-        return [coords[0] - 1, coords[1]]
-    if direction == ">":
-        return [coords[0], coords[1] + 1]
-    if direction == "<":
-        return [coords[0], coords[1] - 1]
+""" END HELPER FUNCTIONS """
 
 
-def visit(coords, directions):
-    visited = [coords]
-    for char in directions:
-        coords = move(coords, char)
-        visited.append(coords)
+DAY = "03"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 2565
+ANSWER2 = 2639
+
+
+def cli_main() -> None:
+    input_funcs = [str.strip]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
+
+
+def process_one(data: str) -> Any:
+    return len(from_origin(data))
+
+
+def visit(coords: Point, directions: str):
+    visitor = lambda arr, pt: arr + [move(arr[-1], pt)]
+    visited = reduce(visitor, directions, [coords])
+
     return list(unique(map(str, visited)))
 
 
+from_origin = partial(visit, Point(0, 0))
+
+
+def move(coords: Point, direction: str):
+    dirs = {
+        "^": Point(1, 0),
+        "v": Point(-1, 0),
+        ">": Point(0, 1),
+        "<": Point(0, -1),
+    }
+    return coords + dirs[direction]
+
+
+def process_two(data: str) -> Any:
+    santa_robosanta = (data[::2], data[1::2])
+    points = unique(mapcat(from_origin, santa_robosanta))
+    return len(list(points))
+
+
 if __name__ == "__main__":
+    cli_main()
 
-    raw = Path("input-03.txt").read_text()
-    coords = [0, 0]
-    # visited = [[0, 0]]
-    """
-    for char in raw:
-        coords = move(coords, char)
-        visited.append(coords)
-    print(len(visited))
-    assert len(visited) == len(raw) + 1
-    print(len(list(unique([str(_) for _ in visited]))))
-    """
-    assert len(visit([9, 0], ">")) == 2
-    assert len(visit([9, 0], "^>v<")) == 4
-    assert len(visit([9, 0], "^v^v^v^v^v")) == 2
-    print(len(visit([0, 0], raw.strip())))
-    santa = raw[::2]
-    robosanta = raw[1::2]
 
-    def sp(txt):
-        return txt[::2], txt[1::2]
-
-    pt2 = partial(
-        lambda s, r: len(list(unique(visit([0, 0], s) + visit([0, 0], r))))
-    )
-    assert pt2(*sp("^v")) == 3
-    assert pt2(*sp("^>v<")) == 3
-    assert pt2(*sp("^v^v^v^v^v")) == 11
-    print(pt2(*sp(raw.strip())))
-
-    # print(len(list(unique(visit([0, 0], santa) + visit([0, 0], robosanta)))))
 """
 --- Day 3: Perfectly Spherical Houses in a Vacuum ---
 
