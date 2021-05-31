@@ -1,20 +1,73 @@
-from pathlib import Path
+from itertools import dropwhile
+from operator import add
+from tutils import Any
+from tutils import accumulate
+from tutils import load_and_process_input
+from tutils import run_tests
 
 
-if __name__ == "__main__":
-    raw = Path("input-01.txt").read_text()
-    plus = raw.count("(")
-    minus = raw.count(")")
-    print(plus - minus)
+""" END HELPER FUNCTIONS """
+
+
+DAY = "01"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 74
+ANSWER2 = 1795
+
+
+def process_one(data: Any) -> int:
+    plus = data.count("(")
+    minus = data.count(")")
+    return plus - minus
+
+
+def process_two(data: Any) -> int:
+    # Make string into list of numbers:
+    def convert_to_numbers(char: str) -> int:
+        return 1 if char == "(" else -1
+
+    as_numbers = map(convert_to_numbers, data)
+
+    # Add the numbers up to each spot in the list:
+    added = accumulate(add, as_numbers)
+
+    # Find the first instance of -1 and add 1 to its index since the floors are
+    # 1-indexed:
+    return next(dropwhile(lambda _: _[1] != -1, enumerate(added)))[0] + 1
+
+    """
     floor = 0
-    for i, char in enumerate(raw):
+    for i, char in enumerate(data):
         if char == "(":
             floor = floor + 1
         else:
             floor = floor - 1
         if floor == -1:
-            print(i + 1)
+            # print(i + 1)
             break
+    return i + 1
+    """
+
+
+def cli_main() -> None:
+    input_funcs = [str.strip]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
+
+
+if __name__ == "__main__":
+    cli_main()
+
 
 """
 --- Day 1: Not Quite Lisp ---
@@ -66,3 +119,4 @@ What is the position of the character that causes Santa to first enter the
 basement?
 
 Your puzzle answer was 1795.
+"""
