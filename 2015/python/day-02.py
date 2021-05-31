@@ -1,26 +1,51 @@
-from pathlib import Path
+from tutils import Iterator, List
+from tutils import splitstriplines
+
+from tutils import load_and_process_input
+from tutils import run_tests
 
 
-def parse(text):
-    return [int(_) for _ in text.split("x")]
+""" END HELPER FUNCTIONS """
 
 
-def perimeter(length, width):
+DAY = "02"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 1588178
+ANSWER2 = 3783758
+
+
+def process_one(data: List[str]) -> int:
+    get_surface = lambda l: surface(*parse(l))
+    return sum(map(get_surface, data))
+
+
+def process_two(data: List[str]) -> int:
+    get_ribbon = lambda l: ribbon(*parse(l))
+    return sum(map(get_ribbon, data))
+
+
+def parse(text: str) -> Iterator[int]:
+    return map(int, text.split("x"))
+
+
+def perimeter(length: int, width: int) -> int:
     return length + length + width + width
 
 
-def surface(length, width, height):
+def surface(length: int, width: int, height: int) -> int:
     sides = [
         2 * length * width,
         2 * width * height,
         2 * height * length,
     ]
     base = sum(sides)
-    small = min(sides) / 2
+    small = min(sides) // 2
     return base + small
 
 
-def ribbon(length, width, height):
+def ribbon(length: int, width: int, height: int) -> int:
     sides = [
         perimeter(length, width),
         perimeter(width, height),
@@ -30,6 +55,23 @@ def ribbon(length, width, height):
     return small + (length * width * height)
 
 
+def cli_main() -> None:
+    input_funcs = [splitstriplines]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
+
+
+if __name__ == "__main__":
+    cli_main()
+
+
+"""
 if __name__ == "__main__":
     raw = Path("input-02.txt").read_text()
     print(parse("2x3x4"))
@@ -42,6 +84,7 @@ if __name__ == "__main__":
     assert (ribbon(*parse("1x1x10"))) == 14
     bows = [ribbon(*parse(line)) for line in raw.splitlines()]
     print(sum(bows))
+"""
 
 """
 --- Day 2: I Was Told There Would Be No Math ---
@@ -65,7 +108,8 @@ For example:
     feet of wrapping paper plus 1 square foot of slack, for a total of 43
     square feet.
 
-All numbers in the elves' list are in feet. How many total square feet of wrapping paper should they order?
+All numbers in the elves' list are in feet. How many total square feet of
+wrapping paper should they order?
 
 Your puzzle answer was 1588178.
 --- Part Two ---
