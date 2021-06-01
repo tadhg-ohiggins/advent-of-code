@@ -1,27 +1,66 @@
 import hashlib
+from tutils import partial
+from tutils import count
+from tutils import Any
+from tutils import compose_left
 
 
-def mkhash(key, num):
-    md5 = hashlib.md5()
-    md5.update(f"{key}{str(num)}".encode())
-    return md5.hexdigest()
+""" END HELPER FUNCTIONS """
 
 
-def findzeros(key):
-    i = 0
-    hsh = ""
-    while not hsh.startswith("000000"):
+DAY = "04"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 282749
+ANSWER2 = 9962624
+
+
+def process_one(data: str) -> int:
+    return findzeroes(data, "00000")
+
+
+def findzeroes(key, target):
+    myhash = partial(mkhash, key)
+    lazy_hashes = partial(map, myhash)
+    find_match = partial(filter, lambda x: x[1].startswith(target))
+    generator = compose_left(lazy_hashes, enumerate, find_match)(count())
+    match = next(generator)
+    return match[0]
+
+
+def xfindzeroes(key, target):
+    # This original is rather more readable than the functional version...
+    i, hsh = 0, ""
+    while not hsh.startswith(target):
         i = i + 1
         hsh = mkhash(key, i)
     return i
 
 
-if __name__ == "__main__":
+def mkhash(key, num):
+    md5hash = hashlib.md5()
+    md5hash.update(f"{key}{str(num)}".encode())
+    return md5hash.hexdigest()
 
-    raw = "yzbqklnj"
-    # assert findzeros("abcdef") == 609043
-    # assert findzeros("pqrstuv") == 1048970
-    print(findzeros(raw))
+
+def process_two(data: Any) -> Any:
+    return findzeroes(data, "000000")
+
+
+def cli_main() -> None:
+    data = "yzbqklnj"
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
+
+
+if __name__ == "__main__":
+    cli_main()
+
 
 """
 --- Day 4: The Ideal Stocking Stuffer ---
