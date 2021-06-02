@@ -1,109 +1,105 @@
-from functools import partial
-from pathlib import Path
-from typing import Iterable
-from toolz import (  # type: ignore
-    compose_left,
-    concat,
-)
+from tutils import Any
+from tutils import Callable
+from tutils import List
+from tutils import Tuple
+from tutils import cast
+
+from tutils import concat
+from tutils import reduce
+
+from tutils import lmap
+from tutils import splitstriplines
+
+from tutils import load_and_process_input
+from tutils import run_tests
 
 
-IterableS = Iterable[str]
+""" END HELPER FUNCTIONS """
+
+Coords = Tuple[int, int]
+CoordsPair = Tuple[Coords, Coords]
 
 
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
+DAY = "06"
+INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
+TA1 = None
+TA2 = None
+ANSWER1 = 400410
+ANSWER2 = 15343601
 
 
-def get_coords(text):
+def process_one(data: List[str]) -> int:
+    def reducer(grid: List, line: str) -> List:
+        coords, command = parse_command(line)
+        return change_area(alter, grid, coords, command)
+
+    lights = [[0] * 1000 for i in range(0, 1000)]
+
+    return sum(concat(reduce(reducer, data, lights)))
+
+
+def parse_command(text: str) -> Tuple[CoordsPair, str]:
+    stripped = text.replace("turn ", "").strip()
+    command, area = stripped.split(" ", 1)
+    coords = get_coords(area)
+    return (coords, command)
+
+
+def get_coords(text: str) -> CoordsPair:
     start, end = text.split(" through ")
-    start_coords = lmap(int, start.split(","))
-    end_coords = lmap(int, end.split(","))
+    start_strings, end_strings = start.split(","), end.split(",")
+    start_coords = (int(start_strings[0]), int(start_strings[1]))
+    end_coords = (int(end_strings[0]), int(end_strings[1]))
     return start_coords, end_coords
 
 
-def alter(val, command):
-    if command == "on":
-        return 1
-    elif command == "off":
-        return 0
-    elif command == "toggle":
-        return int(not bool(val))
-
-
-def alter2(val, command):
-    if command == "on":
-        return val + 1
-    elif command == "off":
-        return max([0, val - 1])
-    elif command == "toggle":
-        return val + 2
-
-
-def change(func, grid, text, command):
-    start, end = get_coords(text)
+def change_area(
+    func: Callable, grid: List, coords: CoordsPair, command: str
+) -> List:
+    start, end = coords
     for j in range(start[1], end[1] + 1):
         for i in range(start[0], end[0] + 1):
             grid[j][i] = func(grid[j][i], command)
     return grid
 
 
-change1 = partial(change, alter)
-change2 = partial(change, alter2)
+def alter(current_value: int, command: str) -> int:
+    new_values = {"on": 1, "off": 0, "toggle": int(not bool(current_value))}
+    return new_values[command]
 
 
-def instr(func, grid, text):
-    if text.startswith("turn on "):
-        return func(grid, text.removeprefix("turn on "), "on")
-    elif text.startswith("turn off "):
-        return func(grid, text.removeprefix("turn off "), "off")
-    elif text.startswith("toggle"):
-        return func(grid, text.removeprefix("toggle"), "toggle")
+def process_two(data: Any) -> Any:
+    def reducer(grid: List, command: str) -> List:
+        return change_area(alter2, grid, *parse_command(command))
+
+    lights = [[0] * 1000 for i in range(0, 1000)]
+
+    return sum(concat(reduce(reducer, data, lights)))
 
 
-instr1 = partial(instr, change1)
-instr2 = partial(instr, change2)
+def alter2(current_value: int, command: str) -> int:
+    new_values = {
+        "on": current_value + 1,
+        "off": max([0, current_value - 1]),
+        "toggle": current_value + 2,
+    }
+    return new_values[command]
 
 
-def process(lights, lines, func):
-    lines = lfilter(None, lines)
-    for line in lines:
-        lights = func(lights[:], line.strip())
-    return sum(list(concat(lights)))
+def cli_main() -> None:
+    input_funcs = [splitstriplines]
+    data = load_and_process_input(INPUT, input_funcs)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
+    assert answer_one == ANSWER1
+    print("Answer one:", answer_one)
+    answer_two = process_two(data)
+    assert answer_two == ANSWER2
+    print("Answer two:", answer_two)
 
 
 if __name__ == "__main__":
-    # test = Path("09-test-data.txt").read_text()
-    # test_answer = whatever
-    # assert process(test, params) == test_answer
-
-    raw = Path("input-06.txt").read_text()
-    raw = raw.strip()
-
-    lights = [[0] * 1000 for i in range(0, 1000)]
-    test_lights = [[0] * 1000 for i in range(0, 1000)]
-    testb_lights = [[0] * 1000 for i in range(0, 1000)]
-    one_passing = [
-        "turn on 0,0 through 999,999",
-        "turn off 0,0 through 999,999",
-        "turn on 0,0 through 999,0",
-        "toggle 499,499 through 500,500",
-    ]
-    results = process(test_lights, one_passing, instr1)
-    assert results == 1004
-
-    oneb_passing = [
-        "turn on 0,0 through 999,999",
-        "toggle 499,499 through 500,500",
-    ]
-    # assert not any([process(_) for _ in one_failing])
-    resultsb = process(testb_lights, oneb_passing, instr1)
-    assert resultsb == 999996
-    answer = process(lights, raw.splitlines(), instr1)
-    assert answer == 400410
-    two_lights = [[0] * 1000 for i in range(0, 1000)]
-    answer2 = process(two_lights, raw.splitlines(), instr2)
-    assert answer2 == 15343601
-    print(answer, answer2)
+    cli_main()
 
 
 """
