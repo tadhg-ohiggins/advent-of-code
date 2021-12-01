@@ -7,7 +7,6 @@ from tutils import (
     splitstriplines,
 )
 from toolz import sliding_window
-import pdb
 
 DAY = "01"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
