@@ -32,8 +32,6 @@ def process_two(data: list[int]) -> int:
 def cli_main() -> None:
     input_funcs = [splitstriplines, partial(lmap, int)]
     data = load_and_process_input(INPUT, input_funcs)
-    # data = [199, 200, 208, 210, 200, 207, 240, 269, 260, 263]
-    answer_one = process_one(data)
     run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
     answer_one = process_one(data)
     assert answer_one == ANSWER1
