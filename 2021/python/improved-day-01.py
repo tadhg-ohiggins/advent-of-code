@@ -6,7 +6,7 @@ from tutils import (
     run_tests,
     splitstriplines,
 )
-from toolz import sliding_window
+from toolz import sliding_window  # type: ignore
 
 DAY = "01"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
@@ -16,15 +16,15 @@ ANSWER1 = 1602
 ANSWER2 = 1633
 
 
-def comparer(pair):
+def comparer(pair: tuple[int, int]) -> bool:
     return pair[1] > pair[0]
 
 
-def process_one(data):
+def process_one(data: list[int]) -> int:
     return len(lfilter(comparer, sliding_window(2, data)))
 
 
-def process_two(data):
+def process_two(data: list[int]) -> int:
     totals = map(sum, sliding_window(3, data))
     return len(lfilter(comparer, sliding_window(2, totals)))
 
