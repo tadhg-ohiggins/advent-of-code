@@ -31,7 +31,6 @@ def process_one(data):
     cols = list(zip(*data))
     gamma = "".join(map(get_most_common, cols))
     epsilon = "".join(map(get_least_common, cols))
-
     return int(gamma, 2) * int(epsilon, 2)
 
 
