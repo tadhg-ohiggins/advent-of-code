@@ -1,10 +1,15 @@
+from __future__ import annotations
+import json
 import pdb
+import re
 import subprocess
 from collections import Counter
-from functools import partial, reduce, wraps
+from dataclasses import dataclass
+from datetime import datetime
+from functools import partial, reduce, singledispatch, wraps
 from itertools import count, groupby, product
 from math import prod
-from operator import itemgetter
+from operator import itemgetter, methodcaller
 from pathlib import Path
 from pprint import pprint
 from string import (
@@ -14,13 +19,16 @@ from string import (
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     Iterable,
+    Iterator,
     Optional,
     Sequence,
     Set,
     Tuple,
     Union,
+    cast,
 )
 
 
@@ -31,21 +39,32 @@ from toolz import (  # type: ignore
     curry,
     do,
     excepts,
+    flip,
+    identity,
     iterate,
     juxt,
     keyfilter,
+    mapcat,
+    partitionby,
     pluck,
     pipe,
     sliding_window,
+    unique,
+    valfilter,
+    valmap,
 )
 
 
 # pylint: disable=unsubscriptable-object
+Json = Union[list, dict]
 IterableS = Iterable[str]
+DT = datetime
+OAny = Optional[Any]
 OInt = Optional[int]
 ODict = Optional[dict]
 OList = Optional[List]
 OSet = Optional[Set]
+OStr = Optional[Set]
 UBoolInt = Union[bool, int]
 UBoolList = Union[bool, list]
 UListStr = Union[list, str]
@@ -56,44 +75,59 @@ UListCall = Union[List[UCall], List[Callable], List[partial]]
 hexc = ["a", "b", "c", "d", "e", "f"] + list(ascii_digits)
 
 
-def toolz_pick(keep: IterableS, d: dict) -> dict:
-    return keyfilter(lambda x: x in keep, d)
+# Sequences
+from tadhg_utils import (
+    add_debug,
+    add_debug_list,
+    c_lmap,
+    c_map,
+    compact,
+    excepts_wrap,
+    filter_az,
+    filter_az09,
+    filter_hex,
+    filter_str,
+    from_8601,
+    is_char_09,
+    is_char_az,
+    is_char_az09,
+    is_char_hex,
+    item_has,
+    lcompact,
+    lconcat,
+    lfilter,
+    lmap,
+    lnoncontinuous,
+    lpluck,
+    noncontinuous,
+    oxford,
+    make_incrementer,
+    nextwhere,
+    split_to_dict,
+    splitstrip,
+    splitstriplines,
+    strip_each as lstrip,
+    until_stable,
+)
 
 
-def toolz_omit(remove: IterableS, d: dict) -> dict:
-    return keyfilter(lambda x: x not in remove, d)
+def make_list(arr: Any) -> List:
+    return [*arr] if isinstance(arr, list) else [arr]
 
 
-def pick(keep: IterableS, d: dict) -> dict:
-    return {k: d[k] for k in d if k in keep}
+def list_accumulator(itr: Iterable) -> Iterable[List]:
+    # list(list_accumulator([1, 2, 3]) -> [[1], [1, 2], [1, 2, 3]]
+    return filter(
+        None, accumulate(lambda a, b: make_list(a) + make_list(b), itr, [])
+    )
 
 
-def omit(remove: IterableS, d: dict) -> dict:
-    return {k: d[k] for k in d if k not in remove}
+# /Sequences
 
 
-def add_debug(debug_f: Callable, orig_f: Callable) -> Callable:
-    """
-    Transforms the function such that output is passed
-    to the debug function before being returned as normal.
-
-    add_debug(print, str.upper) would return a function equivalent to:
-
-    def fn(val: str): -> str
-        result = str.upper(val)
-        print(result)
-        return result
-    """
-    do_f = partial(do, debug_f)
-    return compose_left(orig_f, do_f)
-
-
-def add_debug_list(debug_f: Callable, funcs: List[Callable]) -> List[Callable]:
-    """
-    Transforms each of the functions such that the output of each is passed
-    to the debug function before being returned as normal.
-    """
-    return [add_debug(debug_f, f) for f in funcs]
+# Misc
+def in_incl_range(lower: float, upper: float, candidate: float) -> bool:
+    return lower <= candidate <= upper
 
 
 def run_process(
@@ -106,124 +140,22 @@ def run_process(
     return subprocess.run(command, **(base_opts | opts))  # type: ignore
 
 
-def until_stable(func: Callable) -> Callable:
-    """
-    Repeatedly call the same function on its arguments until the result doesn't
-    change.
+# /Misc
 
-    Not sure how to make this work in variadic cases; comparing a single result
-    to *args doesn't seem to work.
-    """
+# Coordinates
+@dataclass(frozen=True, order=True)
+class Point:
+    x: int
+    y: int
 
-    def inner(arg: Any, **kwds: Any) -> Any:
-        if func(arg, **kwds) == arg:
-            return arg
-        return inner(func(arg, **kwds))
+    def __add__(self, other: Point) -> Point:
+        return Point(x=self.x + other.x, y=self.y + other.y)
 
-    return inner
+    def __sub__(self, other: Point) -> Point:
+        return Point(x=self.x - other.x, y=self.y - other.y)
 
-
-def oxford(lst: List[str]) -> str:
-    """
-    Turns a list into a properly-formatted list phrase.
-    ``["something"]`` becomes "something".
-    ``["thing1", "thing2"]`` becomes "thing1 and thing2".
-    ``["thing1", "thing2", "thing3"]`` becomes "thing1, thing2, and thing3".
-    ``["a", "b", "c", "d"]`` becomes "a, b, c, and d".
-    """
-    if len(lst) <= 2:
-        return " and ".join(lst)
-    return f'{", ".join(lst[:-1])}, and {lst[-1]}'
-
-
-def excepts_wrap(err: Any, err_func: Callable) -> Callable:
-    """
-    This basically means that::
-
-        @excepts_wrap(ValueError, lambda _: None)
-        def get_formatted_time(fmt: str, value: str) -> Optional[datetime]:
-            return datetime.strptime(value.strip(), fmt)
-
-        gft = get_formatted_time
-
-    With the decorator, that's broadly equivalent to this without
-    any decorator::
-
-        gft = excepts(
-            ValueError,
-            get_formatted_time,
-            lambda _: None
-        )
-
-    """
-
-    def inner_excepts_wrap(fn: Callable) -> Callable:
-        return excepts(err, fn, err_func)
-
-    return inner_excepts_wrap
-
-
-def nextwhere(pred: Callable, seq: Sequence) -> Any:
-    return next(filter(pred, seq), False)
-
-
-def noncontinuous(array: List[int]) -> Iterable:
-    """
-    noncontinuous([1, 2, 3, 5, 6, 8, 9, 10]) == [[1, 2, 3], [5, 6], [8, 9, 10]]
-
-    The difference between a number and its index will be stable for a
-    consecutive run, so we can group by that.
-
-    -1 for 1, 2, and 3; -2 for 5 and 6; -3 for 8, 9 and 10 in the above list.
-
-    enumerate gets us item and index, a quick x[0] - x[1] lambda gets us the
-    difference.
-
-    Once we have them in groups, we extract them into the lists of runs.
-
-    This could be all iterators instead of lists, but I'll make another
-    function to do that translation.
-
-    See also consecutive_groups in more_itertools, which was the basis for
-    this.
-    """
-    check = lambda x: x[0] - x[1]
-    collate = lambda x: map(itemgetter(1), list(x)[1])
-    return map(collate, groupby(enumerate(array), key=check))
-
-
-lfilter = compose_left(filter, list)  # lambda f, l: [*filter(f, l)]
-lcompact = partial(lfilter, None)
-lmap = compose_left(map, list)  # lambda f, l: [*map(f, l)]
-lpluck = compose_left(pluck, list)  # lambda k, l: [*pluck(f, l)]
-lstrip = partial(lmap, str.strip)
-splitstrip = compose_left(str.split, lstrip, lcompact)
-splitstriplines = compose_left(str.splitlines, lstrip, lcompact)
-seq_to_dict = compose_left(lmap, dict)
-split_to_dict = lambda s, **kwds: seq_to_dict(partial(splitstrip, **kwds), s)
-c_map = curry(map)
-c_lmap = curry(lmap)
-is_char_az = partial(lambda y, x: x in y, ascii_lowercase)
-is_char_hex = partial(lambda y, x: x in y, hexc)
-is_char_az09 = partial(lambda y, x: x in y, ascii_lowercase + ascii_digits)
-filter_str = partial(lambda f, s: "".join(filter(f, s)))
-filter_az = partial(filter_str, is_char_az)
-filter_az09 = partial(filter_str, is_char_az09)
-filter_hex = partial(filter_str, is_char_hex)
-add_pprint = partial(add_debug, pprint)
-add_pprinting = partial(lmap, add_pprint)
-
-
-def make_incrementer(start: int = 0, step: int = 1) -> Callable:
-    return partial(next, count(start, step))
-
-
-def in_incl_range(lower: float, upper: float, candidate: float) -> bool:
-    return lower <= candidate <= upper
-
-
-def lnoncontinuous(array: List[int]) -> List[List[int]]:
-    return lmap(list, noncontinuous(array))
+    def __mul__(self, other: int) -> Point:
+        return Point(x=self.x * other, y=self.y * other)
 
 
 def adjacent_transforms(
@@ -259,18 +191,35 @@ def generate_bounded_coords(
     return product(*ranges)
 
 
-def make_list(arr: Any) -> List:
-    return [*arr] if isinstance(arr, list) else [arr]
+# /Coordinates
 
 
-def list_accumulator(itr: Iterable) -> Iterable[List]:
-    # list(list_accumulator([1, 2, 3]) -> [[1], [1, 2], [1, 2, 3]]
-    return filter(
-        None, accumulate(lambda a, b: make_list(a) + make_list(b), itr, [])
-    )
+# File reading/writing
 
 
-def load_and_process_input(fname: str, input_funcs: UListCall) -> Any:
+def load_text(fname: Union[Path, str]) -> str:
+    return Path(fname).read_text()
+
+
+def load_json(fname: Union[Path, str]) -> Json:
+    return json.loads(load_text(fname))
+
+
+def write_path_with_text(fname: Path, text: str) -> None:
+    fname.write_text(text)
+
+
+def write_path_with_json(fname: Path, data: Json) -> None:
+    write_path_with_text(fname, json.dumps(data))
+
+
+# /File reading/writing
+
+
+# Advent of Code helpers
+def load_and_process_input(
+    fname: Union[Path, str], input_funcs: UListCall
+) -> Any:
     processinput = partial(process_input, input_funcs)
     return compose_left(load_input, processinput)(fname)
 
@@ -283,22 +232,29 @@ def process_input(input_funcs: List[Callable], text: str) -> Any:
     return compose_left(*input_funcs)(text)
 
 
+def get_inputs(fname: str) -> tuple[Path, Path]:
+    path = Path(fname)
+    day = path.stem[-2:]
+    data, testdata = f"input-{day}.txt", f"test-input-{day}.txt"
+    return (path.parent / data, path.parent / testdata)
+
+
 def test(
-    testfile: str,
+    testfile: Union[Path, str],
     answer: Any,
     input_funcs: UListCall,
     process: Callable,
-    count: int,
+    ordinal: int,
 ) -> None:
     testdata = load_and_process_input(testfile, input_funcs)
     result = process(testdata)
     if result != answer:
         pdb.set_trace()
-    print(f"Test answer {count}:", result)
+    print(f"Test answer {ordinal}:", result)
 
 
 def tests(
-    testfile: str,
+    testfile: Union[Path, str],
     tanswer_one: Any,
     tanswer_two: Any,
     answer_one: Any,
@@ -322,7 +278,7 @@ def tests(
 
 
 def run_tests(
-    testfile: str,
+    testfile: Union[Path, str],
     tanswer_one: Any,
     tanswer_two: Any,
     answer_one: Any,
@@ -341,3 +297,6 @@ def run_tests(
             test(testfile_one, tanswer_one, input_funcs, process_1, 1)
         if Path(testfile_two).exists():
             test(testfile_two, tanswer_two, input_funcs, process_2, 2)
+
+
+# /Advent of Code helpers
