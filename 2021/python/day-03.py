@@ -37,7 +37,6 @@ def process_one(data):
 
 
 def process_two(data):
-    cols = parse_lines_into_cols(data)
     oxy_lines = data[:]
     colnum = 0
     while len(oxy_lines) > 1:
