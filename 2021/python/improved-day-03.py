@@ -27,7 +27,7 @@ def get_least_common(array: list, default: str = "0") -> str:
     return default if most[1] == least[1] else least[0]
 
 
-def process_one(data):
+def process_one(data: list[str]):
     cols = list(zip(*data))
     gamma = "".join(map(get_most_common, cols))
     epsilon = "".join(map(get_least_common, cols))
