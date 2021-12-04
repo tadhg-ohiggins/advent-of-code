@@ -1,6 +1,6 @@
 from typing import Callable
 import aoc
-from tadhg_utils import lfilter, splitstriplines
+from tadhg_utils import flip_bits, lfilter, splitstriplines
 
 
 INPUT, TEST = aoc.get_inputs(__file__)
@@ -15,13 +15,13 @@ def get_most_common(array: tuple[str, ...]) -> str:
 
 
 def get_least_common(array: tuple[str, ...]) -> str:
-    return "1" if array.count("1") < array.count("0") else "0"
+    return "1" if get_most_common(array) == "0" else "0"
 
 
 def process_one(data: list[str]):
     cols = list(zip(*data))
     gamma = "".join(map(get_most_common, cols))
-    epsilon = "".join(map(get_least_common, cols))
+    epsilon = flip_bits(gamma)
     return int(gamma, 2) * int(epsilon, 2)
 
 
