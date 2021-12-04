@@ -1,6 +1,4 @@
-from collections import Counter
 from typing import Callable
-import pdb
 import aoc
 from tadhg_utils import lfilter, splitstriplines
 
@@ -12,19 +10,12 @@ A1 = 749376
 A2 = 2372923
 
 
-def get_most_and_least(array: list):
-    commons = Counter(array).most_common()
-    return (commons[0], commons[-1])
+def get_most_common(array: list) -> str:
+    return "1" if array.count("1") >= array.count("0") else "0"
 
 
-def get_most_common(array: list, default: str = "1") -> str:
-    most, least = get_most_and_least(array)
-    return default if most[1] == least[1] else most[0]
-
-
-def get_least_common(array: list, default: str = "0") -> str:
-    most, least = get_most_and_least(array)
-    return default if most[1] == least[1] else least[0]
+def get_least_common(array: list) -> str:
+    return "1" if array.count("1") < array.count("0") else "0"
 
 
 def process_one(data: list[str]):
