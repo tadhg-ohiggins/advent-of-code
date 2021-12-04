@@ -10,11 +10,11 @@ A1 = 749376
 A2 = 2372923
 
 
-def get_most_common(array: list) -> str:
+def get_most_common(array: tuple[str, ...]) -> str:
     return "1" if array.count("1") >= array.count("0") else "0"
 
 
-def get_least_common(array: list) -> str:
+def get_least_common(array: tuple[str, ...]) -> str:
     return "1" if array.count("1") < array.count("0") else "0"
 
 
@@ -28,8 +28,7 @@ def process_one(data: list[str]):
 def filter_by_func(func: Callable, lines: list[str]) -> str:
     colnum = 0
     while len(lines) > 1:
-        cols = list(zip(*lines))
-        qualified = func(cols[colnum])
+        qualified = func([ln[colnum] for ln in lines])
         lines = lfilter(lambda x: x[colnum] == qualified, lines)
         colnum = colnum + 1
     assert len(lines) == 1
