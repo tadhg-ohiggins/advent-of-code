@@ -299,4 +299,16 @@ def run_tests(
             test(testfile_two, tanswer_two, input_funcs, process_2, 2)
 
 
+def finish(result_one, answer_one, result_two, answer_two):
+    try:
+        if answer_one is not None:
+            assert result_one == answer_one
+        print("Answer one:", result_one)
+        if answer_two is not None:
+            assert result_two == answer_two
+        print("Answer two:", result_two)
+    except AssertionError:
+        pdb.set_trace()
+
+
 # /Advent of Code helpers
