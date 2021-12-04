@@ -57,15 +57,7 @@ def cli_main() -> None:
     aoc.run_tests(TEST, TA1, TA2, A1, input_funcs, process_one, process_two)
     result_one = process_one(data)
     result_two = process_two(data)
-    try:
-        if A1 is not None:
-            assert result_one == A1
-        print("Answer one:", result_one)
-        if A2 is not None:
-            assert result_two == A2
-        print("Answer two:", result_two)
-    except AssertionError:
-        pdb.set_trace()
+    aoc.finish(result_one, A1, result_two, A2)
 
 
 if __name__ == "__main__":
