@@ -15,7 +15,7 @@ INPUT, TEST = aoc.get_inputs(__file__)
 TA1 = 4512
 TA2 = 1924
 A1 = 82440
-A2 = None
+A2 = 20774
 
 
 def parse_input(data: str):
@@ -32,6 +32,11 @@ def winner(board, number):
     return sum(map(int, numbers)) * int(number)
 
 
+def called_winner(board, called_numbers):
+    numbers = lfilter(lambda n: n not in called_numbers, lconcat(board))
+    return sum(map(int, numbers)) * int(called_numbers[-1])
+
+
 def change_board(number, board):
     replacer = partial(replace_in_list, number, f"x{number}")
     return lmap(replacer, board)
@@ -40,24 +45,58 @@ def change_board(number, board):
 def check_for_winner(rows, number):
     cols = list(zip(*rows))
     if any(all(x.startswith("x") for x in row) for row in rows):
+        pdb.set_trace()
         return winner(rows, number)
     elif any(all(x.startswith("x") for x in col) for col in cols):
         return winner(rows, number)
     return False
 
 
+def is_winner(called_numbers, rows):
+    cols = list(zip(*rows))
+    if any(all(x in called_numbers for x in row) for row in rows):
+        return called_winner(rows, called_numbers)
+    if any(all(x in called_numbers for x in col) for col in cols):
+        return called_winner(rows, called_numbers)
+    return False
+
+
 def process_one(data):
+    numbers, boards = data
+    called_numbers, rest = numbers[:4], numbers[4:]  # Can't win without 5 nums
+    for number in rest:
+        called_numbers.append(number)
+        check = partial(is_winner, called_numbers)
+        if winning_totals := lcompact(lmap(check, boards)):
+            return winning_totals[0]
+
+
+def process_two(data):
+    numbers, boards = data[0], data[1]
+    called_numbers, rest = numbers[:4], numbers[4:]  # Can't win without 5 num
+    winning_boards = []
+    for number in rest:
+        called_numbers.append(number)
+        for board in filter(lambda b: b not in winning_boards, boards):
+            if is_winner(called_numbers, board):
+                winning_boards.append(board)
+        if len(winning_boards) == len(boards):
+            return called_winner(winning_boards[-1], called_numbers)
+
+
+def xprocess_one(data):
     numbers, boards = data
     for number in numbers:
         boards = [change_board(number, board) for board in boards]
         for board in boards:
             if winner := check_for_winner(board, number):
+                pdb.set_trace()
                 return winner
 
     pdb.set_trace()
 
 
-def process_two(data):
+def xprocess_two(data):
     numbers, boards = data
     for number in numbers:
         boards = [change_board(number, board) for board in boards]
