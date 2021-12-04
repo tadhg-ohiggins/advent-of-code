@@ -10,6 +10,7 @@ enable = [
 disable = [
     "attribute-defined-outside-init",
     "duplicate-code",
+    "forgotten-debug-statement",
     "invalid-name",
     "missing-docstring",
     "protected-access",
