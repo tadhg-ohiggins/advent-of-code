@@ -21,7 +21,7 @@ def cli_main():
     """
     parser = ArgumentParser()
     parser.add_argument("day", type=int)
-    parser.add_argument("--year", type=int, default=2020)
+    parser.add_argument("--year", type=int, default=2021)
     options = parser.parse_args()
     day, year = options.day, options.year
     url = f"https://adventofcode.com/{year}/day/{day}/input"
