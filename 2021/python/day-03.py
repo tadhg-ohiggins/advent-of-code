@@ -49,7 +49,6 @@ def process_two(data):
         )
         if mc_count == lc_count:
             most_common = "1"
-        print(colnum, most_common, least_common, oxy_lines)
         oxy_lines = lfilter(lambda x: x[colnum] == most_common, oxy_lines)
         colnum = colnum + 1
 
@@ -67,7 +66,6 @@ def process_two(data):
         )
         if mc_count == lc_count:
             least_common = "0"
-        print(colnum, most_common, least_common, co_lines)
         co_lines = lfilter(lambda x: x[colnum] == least_common, co_lines)
         colnum = colnum + 1
 
