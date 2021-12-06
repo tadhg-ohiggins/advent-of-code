@@ -41,6 +41,26 @@ def days(days, data):
     return data
 
 
+"""
+If you take a new fish (one that will spawn in 8 days and then 6 days
+thereafter) the set of fish you have after n days is the same as the set after
+n -9 days plus the set after n -7 days.
+
+Since the sets of fish are always the same you can use that fact to ignore the
+sets entirely and just count the number of fish in the sets.
+
+Also, any fish/day combo can be made into a "new fish" by changing the number
+of days, essentially backdating the fish to when it had 8 days left. And then
+generating the total number of fish becomes a matter of looking at the initial
+set and backdating each fish in that set so that the count of days for that
+"family" of fish starts from when the original fish had 8 days left.
+
+E.g. the final total number of fish generated in 30 days by a fish starting
+with a count of 3 is the same as the number of fish generated in 35 days by a
+fish starting with a count of 8.
+"""
+
+
 @cache
 def twofish(daycount):
     if daycount >= 16:
