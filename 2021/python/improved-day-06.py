@@ -1,4 +1,4 @@
-from functools import cache, partial
+from functools import cache, partial, reduce
 import aoc
 from tadhg_utils import lmap, splitstrip
 
@@ -11,25 +11,23 @@ A2 = 1687617803407
 
 
 @cache
-def twofish(daycount):
-    if daycount >= 9:
-        return twofish(daycount - 9) + twofish(daycount - 7)
-    return 1
+def twofish(days: int) -> int:
+    return 1 if days < 9 else twofish(days - 9) + twofish(days - 7)
 
 
-def redfish(daycount, data):
-    count = 0
-    for n in data:
-        count = count + twofish(daycount + (8 - n))
-    return count
+def bluefish(days: int, data: list[int]):
+    def reducer(acc, val):
+        return acc + twofish(days + (8 - val))
+
+    return reduce(reducer, data, 0)
 
 
-def process_one(data):
-    return redfish(80, data)
+def process_one(data: list[int]):
+    return bluefish(80, data)
 
 
-def process_two(data):
-    return redfish(256, data)
+def process_two(data: list[int]):
+    return bluefish(256, data)
 
 
 def cli_main() -> None:
