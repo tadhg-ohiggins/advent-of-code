@@ -5,10 +5,7 @@ from tadhg_utils import lmap, splitstrip
 
 
 INPUT, TEST = aoc.get_inputs(__file__)
-TA1 = 37
-TA2 = 168
-A1 = 331067
-A2 = 92881128
+TA1, TA2, A1, A2 = 37, 168, 331067, 92881128
 
 
 @cache
@@ -24,26 +21,19 @@ def get_gauss(candidate: int, position: int) -> int:
     return get_sum(abs(position - candidate))
 
 
-def get_costs(positions: list[int], func: Callable) -> int:
+def get_costs(func: Callable, positions: list[int]) -> int:
     viable_positions = range(positions[0], 1 + positions[-1])
     costs = lambda vb: sum((func(vb, p) for p in positions))
     return min(map(costs, viable_positions))
 
 
-def process_one(data: list[int]) -> int:
-    return get_costs(data, get_diff)
-
-
-def process_two(data: list[int]) -> int:
-    return get_costs(data, get_gauss)
-
-
 def cli_main() -> None:
     input_funcs = [partial(splitstrip, sep=","), partial(lmap, int), sorted]
     data = aoc.load_and_process_input(INPUT, input_funcs)
+    process_one = partial(get_costs, get_diff)
+    process_two = partial(get_costs, get_gauss)
     aoc.run_tests(TEST, TA1, TA2, A1, input_funcs, process_one, process_two)
     result_one = process_one(data)
-    print(result_one)
     result_two = process_two(data)
     aoc.finish(result_one, A1, result_two, A2)
 
