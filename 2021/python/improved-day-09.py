@@ -1,16 +1,10 @@
-from functools import cache, partial, reduce
 from math import prod
-import pdb
 import aoc
-from toolz import keyfilter
-from tadhg_utils import lcompact, lfilter, lmap, splitstrip, splitstriplines
+from tadhg_utils import lcompact, lfilter, lmap, splitstriplines
 
 
 INPUT, TEST = aoc.get_inputs(__file__)
-TA1 = 15
-TA2 = 1134
-A1 = 530
-A2 = 1019494
+TA1, TA2, A1, A2 = 15, 1134, 530, 1019494
 
 
 def make_grid(data):
