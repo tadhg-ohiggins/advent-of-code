@@ -83,6 +83,7 @@ def decipher_line(line):
             decipherer["c"] = (set(known[7]) - set(known[6])).pop()
 
     assert len(decipherer.keys()) == len(set(decipherer.values()))
+
     # Now we know what c is, f is whatever is in 1 that's not a or c:
     ac = list(pick(["a", "c"], decipherer).values())
     assert len(set(known[1]) - set(ac)) == 1
@@ -91,6 +92,7 @@ def decipher_line(line):
 
     # Now we know acf, we know that any signal lacking f is 2:
     twos = lfilter(lambda x: decipherer["f"] not in x, signals)
+    assert len(twos) == 1
     known[2] = twos[0]
 
     # Now whatever's in 6 that isn't in 7|2 is b:
@@ -123,6 +125,7 @@ def decipher_line(line):
     decipherer["e"] = two_not_nine.pop()
     assert len(decipherer.keys()) == len(set(decipherer.values()))
 
+    # Whatever of the five-length signals contains b is 5:
     fives = set(filter(lambda x: len(x) in (5,), signals))
     five = [x for x in fives if decipherer["b"] in x]
     assert len(five) == 1
