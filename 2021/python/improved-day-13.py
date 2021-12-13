@@ -22,19 +22,19 @@ A2 = [
 ]
 
 
-def parse_instruction(instruction):
+def parse_instruction(instruction: str) -> dict:
     axis, value = instruction.replace("fold along ", "").split("=")
     return {"axis": axis, "value": int(value)}
 
 
-def parse_data(data):
+def parse_data(data: str) -> tuple[set[Point], list[dict]]:
     raw_coords, raw_instructions = map(splitstriplines, data.split("\n\n"))
-    coords = lmap(Point.from_string, raw_coords)
+    coords = set(map(Point.from_string, raw_coords))
     instructions = lmap(parse_instruction, raw_instructions)
     return (coords, instructions)
 
 
-def do_fold(coords, fold):
+def do_fold(coords: set[Point], fold: dict) -> set:
     axis, line, getaxis = fold["axis"], fold["value"], attrgetter(fold["axis"])
     divide = lambda pt: "-" if getaxis(pt) == line else getaxis(pt) < line
     # Note that we know that the values of these will always be > line:
@@ -43,15 +43,15 @@ def do_fold(coords, fold):
     transform = mirrorx if axis == "x" else mirrory
     halves = groupby(divide, coords)
     newpoints = map(transform, halves[False])
-    return list(set(halves[True]).union(newpoints))
+    return set(halves[True]).union(newpoints)
 
 
-def process_one(data):
+def process_one(data: tuple[set[Point], list[dict]]) -> int:
     coords, instructions = data
     return len(do_fold(coords, instructions[0]))
 
 
-def coords_to_lines(coords):
+def coords_to_lines(coords: set[Point]) -> list[str]:
     getx, gety = attrgetter("x"), attrgetter("y")
     xmax, ymax = max(map(getx, coords)), max(map(gety, coords))
     lstarmap = compose_left(starmap, list)
@@ -64,7 +64,7 @@ def coords_to_lines(coords):
     return lmap(get_line, range(ymax + 1))
 
 
-def process_two(data):
+def process_two(data: tuple[set[Point], list[dict]]) -> list[str]:
     coords, instructions = data
     coords = reduce(do_fold, instructions, coords)
     result = coords_to_lines(coords)
