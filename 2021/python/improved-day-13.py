@@ -1,19 +1,11 @@
-from functools import cache, partial, reduce
-from math import prod
-import pdb
+from functools import reduce
+from itertools import starmap
+from operator import attrgetter
 import aoc
-import networkx as nx
-from toolz import keyfilter
+from toolz import compose_left, groupby
 
-from aoc import Point, adjacent_transforms, generate_bounded_coords
-from tadhg_utils import (
-    lcompact,
-    lconcat,
-    lfilter,
-    lmap,
-    splitstrip,
-    splitstriplines,
-)
+from aoc import Point, generate_bounded_coords
+from tadhg_utils import lmap, splitstriplines
 
 
 INPUT, TEST = aoc.get_inputs(__file__)
@@ -21,12 +13,12 @@ TA1 = 17
 TA2 = None
 A1 = 631
 A2 = [
-    "####.####.#....####...##..##..###..####",
-    "#....#....#....#.......#.#..#.#..#.#...",
-    "###..###..#....###.....#.#....#..#.###.",
-    "#....#....#....#.......#.#.##.###..#...",
-    "#....#....#....#....#..#.#..#.#.#..#...",
-    "####.#....####.#.....##...###.#..#.#...",
+    "████ ████ █    ████   ██  ██  ███  ████",
+    "█    █    █    █       █ █  █ █  █ █   ",
+    "███  ███  █    ███     █ █    █  █ ███ ",
+    "█    █    █    █       █ █ ██ ███  █   ",
+    "█    █    █    █    █  █ █  █ █ █  █   ",
+    "████ █    ████ █     ██   ███ █  █ █   ",
 ]
 
 
@@ -39,84 +31,45 @@ def parse_data(data):
     raw_coords, raw_instructions = data.split("\n\n")
     coords = lmap(Point.from_string, splitstriplines(raw_coords))
     instructions = lmap(parse_instruction, splitstriplines(raw_instructions))
-
     return (coords, instructions)
 
 
-def splity(coords, instruction, lims):
-    _, ymax = lims
-    splitline = instruction["value"]
-    top_half = lfilter(lambda pt: pt.y < splitline, coords)
-    bottom_half = lfilter(lambda pt: pt.y > splitline, coords)
-    for point in bottom_half:
-        new_point = Point(x=point.x, y=ymax - point.y)
-        if new_point not in top_half:
-            top_half.append(new_point)
-    return top_half
-
-
-def splitx(coords, instruction, lims):
-    xmax, _ = lims
-    splitline = instruction["value"]
-    left_half = lfilter(lambda pt: pt.x < splitline, coords)
-    right_half = lfilter(lambda pt: pt.x > splitline, coords)
-    for point in right_half:
-        new_point = Point(x=xmax - point.x, y=point.y)
-        if new_point not in left_half:
-            left_half.append(new_point)
-    return left_half
-
-
-def follow_instructions(coords, instruction, lims):
-    if instruction["axis"] == "y":
-        return splity(coords, instruction, lims)
-    if instruction["axis"] == "x":
-        return splitx(coords, instruction, lims)
-    raise UserWarning("Unknown axis")
+def do_fold(coords, fold):
+    axis, line, getaxis = fold["axis"], fold["value"], attrgetter(fold["axis"])
+    divide = lambda pt: "-" if getaxis(pt) == line else getaxis(pt) < line
+    # Note that we know that the values of these will always be > line:
+    mirrorx = lambda pt: Point(x=pt.x - (2 * (pt.x - line)), y=pt.y)
+    mirrory = lambda pt: Point(x=pt.x, y=pt.y - (2 * (pt.y - line)))
+    transform = mirrorx if axis == "x" else mirrory
+    halves = groupby(divide, coords)
+    newpoints = map(transform, halves[False])
+    return list(set(halves[True]).union(newpoints))
 
 
 def process_one(data):
     coords, instructions = data
-    xmax = sorted(coords, key=lambda p: p.x)[-1].x
-    ymax = sorted(coords, key=lambda p: p.y)[-1].y
-    count = 0
-    for instruction in instructions:
-        coords = follow_instructions(coords, instruction, (xmax, ymax))
-        count = count + 1
-        if count == 1:
-            return len(coords)
-        xmax = sorted(coords, key=lambda p: p.x)[-1].x
-        ymax = sorted(coords, key=lambda p: p.y)[-1].y
-
-    return data
+    return len(do_fold(coords, instructions[0]))
 
 
-def coords_to_lines(coords, lims):
-    grid = [
-        Point(*_) for _ in generate_bounded_coords([0, 0], [lims[0], lims[1]])
-    ]
-    lines = []
-    for i in range(lims[1] + 1):
-        line = ""
-        for pt in filter(lambda p: p.y == i, grid):
-            m = "#" if pt in coords else "."
-            line = line + m
-        lines.append(line)
-        print(line)
+def coords_to_lines(coords):
+    getx, gety = attrgetter("x"), attrgetter("y")
+    xmax, ymax = max(map(getx, coords)), max(map(gety, coords))
+    lstarmap = compose_left(starmap, list)
+    grid = lstarmap(Point, generate_bounded_coords([0, 0], (xmax, ymax)))
 
-    return lines
+    def get_line(idx):
+        display = lambda pt: "█" if pt in coords else " "
+        return "".join(map(display, filter(lambda p: p.y == idx, grid)))
+
+    return lmap(get_line, range(ymax + 1))
 
 
 def process_two(data):
     coords, instructions = data
-    xmax = sorted(coords, key=lambda p: p.x)[-1].x
-    ymax = sorted(coords, key=lambda p: p.y)[-1].y
-    for instruction in instructions:
-        coords = follow_instructions(coords, instruction, (xmax, ymax))
-        xmax = sorted(coords, key=lambda p: p.x)[-1].x
-        ymax = sorted(coords, key=lambda p: p.y)[-1].y
-
-    return coords_to_lines(coords, (xmax, ymax))
+    coords = reduce(do_fold, instructions, coords)
+    result = coords_to_lines(coords)
+    print("\n".join(result))
+    return result
 
 
 def cli_main() -> None:
