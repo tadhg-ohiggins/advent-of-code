@@ -28,9 +28,9 @@ def parse_instruction(instruction):
 
 
 def parse_data(data):
-    raw_coords, raw_instructions = data.split("\n\n")
-    coords = lmap(Point.from_string, splitstriplines(raw_coords))
-    instructions = lmap(parse_instruction, splitstriplines(raw_instructions))
+    raw_coords, raw_instructions = map(splitstriplines, data.split("\n\n"))
+    coords = lmap(Point.from_string, raw_coords)
+    instructions = lmap(parse_instruction, raw_instructions)
     return (coords, instructions)
 
 
