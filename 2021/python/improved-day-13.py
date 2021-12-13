@@ -1,10 +1,9 @@
 from functools import reduce
-from itertools import starmap
 from operator import attrgetter
 import aoc
-from toolz import compose_left, groupby
+from toolz import groupby
 
-from aoc import Point, generate_bounded_coords
+from aoc import Point
 from tadhg_utils import lmap, splitstriplines
 
 
@@ -54,12 +53,10 @@ def process_one(data: tuple[set[Point], list[dict]]) -> int:
 def coords_to_lines(coords: set[Point]) -> list[str]:
     getx, gety = attrgetter("x"), attrgetter("y")
     xmax, ymax = max(map(getx, coords)), max(map(gety, coords))
-    lstarmap = compose_left(starmap, list)
-    grid = lstarmap(Point, generate_bounded_coords([0, 0], (xmax, ymax)))
 
     def get_line(idx):
-        display = lambda pt: "█" if pt in coords else " "
-        return "".join(map(display, filter(lambda p: p.y == idx, grid)))
+        vals = (Point(x=xval, y=idx) for xval in range(xmax + 1))
+        return "".join("█" if pt in coords else " " for pt in vals)
 
     return lmap(get_line, range(ymax + 1))
 
