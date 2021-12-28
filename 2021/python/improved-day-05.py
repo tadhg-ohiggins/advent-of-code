@@ -1,6 +1,7 @@
 from collections import Counter
 from functools import partial
 from itertools import starmap
+import math
 from toolz import compose_left
 import aoc
 from tadhg_utils import (
@@ -18,7 +19,6 @@ TA1 = 5
 TA2 = 12
 A1 = 6311
 A2 = 19929
-lstarmap = compose_left(starmap, list)
 
 
 def parse_line(line):
@@ -26,6 +26,24 @@ def parse_line(line):
 
 
 def make_naive_line(a, b, diag=False):
+    import pdb
+
+    pdb.set_trace()
+
+    def anglebtw(a, b):
+        # atan2 gives angle between origin and point; to get angle between two
+        # points, move one to the origin and the other by the corresponding
+        # amount, then use atan2 on the result. Subtracting one from the other
+        # is the same as moving one to the origin and then moving the other the
+        # same amount.
+        c = b - a
+        return math.degrees(math.atan2(c.y, c.x))
+
+    def is_naive(a, b):
+        return anglebtw(a, b) % 45 == 0
+
+    if not is_naive(a, b):
+        raise UserWarning("Not a naive line", a, b)
     points = set()
     diff = lambda a, b: (abs(b - a), get_sign(b - a))
     valx, sigx = diff(a.x, b.x)
@@ -48,8 +66,7 @@ def process_one(data):
 
 
 def process_two(data):
-    make_naive_line_diag = partial(make_naive_line, diag=True)
-    lines = lcompact(lstarmap(make_naive_line_diag, data))
+    lines = lcompact([make_naive_line(ln[0], ln[1], diag=True) for ln in data])
     return detect_overlap(lines)
 
 

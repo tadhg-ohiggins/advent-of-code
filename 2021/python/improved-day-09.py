@@ -70,7 +70,7 @@ def process_two(grid):
 
     xmax = sorted(grid.keys(), key=lambda p: p.x)[-1].x
     ymax = sorted(grid.keys(), key=lambda p: p.y)[-1].y
-    basins = lmap(lambda x: explore(grid, x[0], [], [x[0]], xmax, ymax), lows)
+    basins = map(lambda x: explore(grid, x[0], [], [x[0]], xmax, ymax), lows)
     sbasins = sorted(basins, key=len)
     threebasins = sbasins[-3:]
     return prod(map(len, threebasins))
