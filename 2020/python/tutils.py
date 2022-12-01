@@ -149,6 +149,7 @@ class Point:
     y: int
 
     def __add__(self, other: Point) -> Point:
+        # Point(1,
         return Point(x=self.x + other.x, y=self.y + other.y)
 
     def __sub__(self, other: Point) -> Point:
@@ -156,6 +157,15 @@ class Point:
 
     def __mul__(self, other: int) -> Point:
         return Point(x=self.x * other, y=self.y * other)
+
+    def __iter__(self) -> Iterable:
+        return iter([self.x, self.y])
+
+    @classmethod
+    def from_string(cls, raw_point):
+        # From e.g. "5,23" to Point(x=5, y=23)
+        no_parens = raw_point.replace("(", "").replace(")", "")
+        return cls(*map(int, splitstrip(no_parens, sep=",")))
 
 
 def adjacent_transforms(
