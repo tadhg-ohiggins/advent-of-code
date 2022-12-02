@@ -1,13 +1,13 @@
 from functools import partial
+from toolz import pipe
+from toolz.curried import get, map as cmap
 from tutils import (
-    lmap,
+    innermap,
     load_and_process_input,
     run_tests,
+    splitblocks,
     splitstriplines,
 )
-from more_itertools import split_at
-from toolz import sliding_window
-import pdb
 
 DAY = "01"
 INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
@@ -17,22 +17,20 @@ ANSWER1 = 69206
 ANSWER2 = 197400
 
 
-def chunk(lines):
-    return lmap(partial(lmap, int), (split_at(lines, lambda l: l == "")))
-
-
 def process_one(data):
-    totals = lmap(sum, data)
-    return sorted(totals)[-1]
+    return pipe(data, *(cmap(sum), sorted))[-1]
 
 
 def process_two(data):
-    totals = lmap(sum, data)
-    return sum(sorted(totals)[-3:])
+    return pipe(data, *(cmap(sum), sorted, get([-1, -2, -3]), sum))
 
 
 def cli_main() -> None:
-    input_funcs = [str.splitlines, chunk]
+    input_funcs = [
+        splitblocks,
+        cmap(splitstriplines),
+        partial(innermap, int),
+    ]
     data = load_and_process_input(INPUT, input_funcs)
     answer_one = process_one(data)
     # print(answer_one)

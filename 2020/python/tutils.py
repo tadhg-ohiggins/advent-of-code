@@ -321,4 +321,15 @@ def finish(result_one, answer_one, result_two, answer_two):
         pdb.set_trace()
 
 
+def splitblocks(text):
+    return lmap(str.strip, text.split("\n\n"))
+
+
 # /Advent of Code helpers
+
+
+def innermap(func, sequence):
+    # Assumes that sequences contains elements that are all themselves
+    # iterable. lmap will be called on each elements of sequence, with func as
+    # the function.
+    return lmap(partial(lmap, func), sequence)
