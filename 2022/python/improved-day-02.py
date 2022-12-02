@@ -1,5 +1,5 @@
 from functools import partial
-from toolz import identity, pipe
+from toolz import pipe
 from toolz.curried import map as cmap
 from tutils import (
     lmap,
@@ -15,43 +15,29 @@ TA2 = 12
 ANSWER1 = 13268
 ANSWER2 = 15508
 
-invertd = lambda d: {v: k for k, v in d.items()}
-
-TOSHAPE = {
-    "A": "R",
-    "B": "P",
-    "C": "S",
-    "X": "R",
-    "Y": "P",
-    "Z": "S",
-}
-TOCHAR = invertd(TOSHAPE)
-
+# The ordering here determines much of the list-shifting and modulo math below:
 BEATS = {
-    "R": "S",
-    "P": "R",
-    "S": "P",
+    "A": "Y",
+    "B": "Z",
+    "C": "X",
 }
-LOSES = invertd(BEATS)
+OPP = list(BEATS.keys())
+MINE = list(BEATS.values())
 
 
 def get_result(pair):
-    shapes = lmap(TOSHAPE.get, pair)
-    if shapes[0] == shapes[1]:
-        return 3
-    if BEATS.get(shapes[1]) == shapes[0]:
-        return 6
-    return 0
+    distance = (OPP.index(pair[0]) - MINE.index(pair[1])) % 3 % 3
+    return 6 - (distance * 3)
 
 
 def shape_score(move):
-    return list(BEATS.keys()).index(TOSHAPE.get(move)) + 1
+    return (MINE[2:] + MINE[:2]).index(move) + 1
 
 
 def get_moves(pair):
-    transforms = {"X": BEATS.get, "Y": identity, "Z": LOSES.get}
-    funcs = (TOSHAPE.get, transforms[pair[1]], TOCHAR.get)
-    return [pair[0], pipe(pair[0], *funcs)]
+    amount = {"X": 1, "Y": 2, "Z": 0}.get(pair[1])
+    response = MINE[(OPP.index(pair[0]) + amount) % 3 % 3]
+    return [pair[0], response]
 
 
 def get_score(pair):
