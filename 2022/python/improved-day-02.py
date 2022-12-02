@@ -1,9 +1,7 @@
 from functools import partial
-from toolz import pipe
-from toolz.curried import identity, map as cmap
+from toolz import identity, pipe
+from toolz.curried import map as cmap
 from tutils import (
-    innermap,
-    lfilter,
     lmap,
     load_and_process_input,
     run_tests,
