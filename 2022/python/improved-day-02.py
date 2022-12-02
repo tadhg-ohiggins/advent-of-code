@@ -1,6 +1,6 @@
 from functools import partial
 from toolz import pipe
-from toolz.curried import map as cmap
+from toolz.curried import identity, map as cmap
 from tutils import (
     innermap,
     lfilter,
@@ -37,12 +37,8 @@ BEATS = {
 LOSES = invertd(BEATS)
 
 
-def to_shapes(pair):
-    return lmap(TOSHAPE.get, pair)
-
-
 def get_result(pair):
-    shapes = to_shapes(pair)
+    shapes = lmap(TOSHAPE.get, pair)
     if shapes[0] == shapes[1]:
         return 3
     if BEATS.get(shapes[1]) == shapes[0]:
@@ -54,12 +50,10 @@ def shape_score(move):
     return list(BEATS.keys()).index(TOSHAPE.get(move)) + 1
 
 
-def get_winpair(pair):
-    if pair[1] == "X":
-        return [pair[0], pipe(pair[0], *(TOSHAPE.get, BEATS.get, TOCHAR.get))]
-    if pair[1] == "Y":
-        return [pair[0], pipe(pair[0], *(TOSHAPE.get, TOCHAR.get))]
-    return [pair[0], pipe(pair[0], *(TOSHAPE.get, LOSES.get, TOCHAR.get))]
+def get_moves(pair):
+    transforms = {"X": BEATS.get, "Y": identity, "Z": LOSES.get}
+    funcs = (TOSHAPE.get, transforms[pair[1]], TOCHAR.get)
+    return [pair[0], pipe(pair[0], *funcs)]
 
 
 def get_score(pair):
@@ -73,7 +67,7 @@ def process_one(data):
 
 
 def process_two(data):
-    procs = [cmap(get_winpair), cmap(get_score), sum]
+    procs = [cmap(get_moves), cmap(get_score), sum]
     result = pipe(data, *procs)
     return result
 
