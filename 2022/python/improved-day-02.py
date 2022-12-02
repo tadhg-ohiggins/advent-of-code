@@ -26,12 +26,9 @@ MINE = list(BEATS.values())
 
 
 def get_result(pair):
+    shape_score = (MINE[2:] + MINE[:2]).index(pair[1]) + 1
     distance = (OPP.index(pair[0]) - MINE.index(pair[1])) % 3 % 3
-    return 6 - (distance * 3)
-
-
-def shape_score(move):
-    return (MINE[2:] + MINE[:2]).index(move) + 1
+    return shape_score + 6 - (distance * 3)
 
 
 def get_moves(pair):
@@ -40,16 +37,12 @@ def get_moves(pair):
     return [pair[0], response]
 
 
-def get_score(pair):
-    return get_result(pair) + shape_score(pair[1])
-
-
 def process_one(data):
-    return pipe(data, *(cmap(get_score), sum))
+    return pipe(data, *(cmap(get_result), sum))
 
 
 def process_two(data):
-    return pipe(data, *(cmap(get_moves), cmap(get_score), sum))
+    return pipe(data, *(cmap(get_moves), cmap(get_result), sum))
 
 
 def cli_main() -> None:
