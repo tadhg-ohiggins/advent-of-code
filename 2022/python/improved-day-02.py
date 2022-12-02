@@ -19,7 +19,7 @@ ANSWER2 = 15508
 
 invertd = lambda d: {v: k for k, v in d.items()}
 
-MAPPING = {
+TOSHAPE = {
     "A": "R",
     "B": "P",
     "C": "S",
@@ -27,7 +27,7 @@ MAPPING = {
     "Y": "P",
     "Z": "S",
 }
-UNMAPPING = invertd(MAPPING)
+TOCHAR = invertd(TOSHAPE)
 
 BEATS = {
     "R": "S",
@@ -36,35 +36,30 @@ BEATS = {
 }
 LOSES = invertd(BEATS)
 
-get_shape = lambda l: MAPPING[l]
-get_move = lambda l: UNMAPPING[l]
-get_winner = lambda l: BEATS[l]
-get_loser = lambda l: LOSES[l]
-
 
 def to_shapes(pair):
-    return lmap(get_shape, pair)
+    return lmap(TOSHAPE.get, pair)
 
 
 def get_result(pair):
     shapes = to_shapes(pair)
     if shapes[0] == shapes[1]:
         return 3
-    if get_winner(shapes[1]) == shapes[0]:
+    if BEATS.get(shapes[1]) == shapes[0]:
         return 6
     return 0
 
 
 def shape_score(move):
-    return list(BEATS.keys()).index(get_shape(move)) + 1
+    return list(BEATS.keys()).index(TOSHAPE.get(move)) + 1
 
 
 def get_winpair(pair):
     if pair[1] == "X":
-        return [pair[0], pipe(pair[0], *(get_shape, get_winner, get_move))]
+        return [pair[0], pipe(pair[0], *(TOSHAPE.get, BEATS.get, TOCHAR.get))]
     if pair[1] == "Y":
-        return [pair[0], pipe(pair[0], *(get_shape, get_move))]
-    return [pair[0], pipe(pair[0], *(get_shape, get_loser, get_move))]
+        return [pair[0], pipe(pair[0], *(TOSHAPE.get, TOCHAR.get))]
+    return [pair[0], pipe(pair[0], *(TOSHAPE.get, LOSES.get, TOCHAR.get))]
 
 
 def get_score(pair):
