@@ -61,15 +61,11 @@ def get_score(pair):
 
 
 def process_one(data):
-    procs = [cmap(get_score), sum]
-    result = pipe(data, *procs)
-    return result
+    return pipe(data, *(cmap(get_score), sum))
 
 
 def process_two(data):
-    procs = [cmap(get_moves), cmap(get_score), sum]
-    result = pipe(data, *procs)
-    return result
+    return pipe(data, *(cmap(get_moves), cmap(get_score), sum))
 
 
 def cli_main() -> None:
