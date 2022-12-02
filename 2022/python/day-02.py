@@ -17,7 +17,7 @@ INPUT, TEST = f"input-{DAY}.txt", f"test-input-{DAY}.txt"
 TA1 = 15
 TA2 = 12
 ANSWER1 = 13268
-ANSWER2 = None
+ANSWER2 = 15508
 
 RESP = {"A": "X", "B": "Y", "C": "Z"}
 
@@ -91,15 +91,13 @@ def process_two(data):
 def cli_main() -> None:
     input_funcs = [splitstriplines, partial(lmap, str.split)]
     data = load_and_process_input(INPUT, input_funcs)
-    pdb.set_trace()
-    answer_one = process_one(data)
-    print(answer_one)
-    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
     # answer_one = process_one(data)
+    run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    answer_one = process_one(data)
     assert answer_one == ANSWER1
     print("Answer one:", answer_one)
     answer_two = process_two(data)
-    print(answer_two)
+    # print(answer_two)
     assert answer_two == ANSWER2
     print("Answer two:", answer_two)
 
