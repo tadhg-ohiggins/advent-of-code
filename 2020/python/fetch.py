@@ -1,9 +1,10 @@
 from argparse import ArgumentParser
-from functools import partial
-from operator import methodcaller
+from functools import reduce
+from operator import add
 from pathlib import Path
+from bs4 import BeautifulSoup  # type: ignore
 import requests
-from toolz import compose_left, do, identity
+from tadhg_utils import lmap, load_text, run_process
 
 
 def cli_main():
@@ -25,11 +26,35 @@ def cli_main():
     options = parser.parse_args()
     day, year = options.day, options.year
     url = f"https://adventofcode.com/{year}/day/{day}/input"
-    output = Path(f"input-{str(day).zfill(2)}.txt")
-    cookies = dict([Path("../.session-cookie").read_text().strip().split("=")])
+    cookies = dict([load_text("../.session-cookie").strip().split("=")])
     res = requests.get(url, cookies=cookies)
-    output.write_text(res.text.strip())
-    print(res.text.strip())
+    if Path("./data/").exists() and Path("./data/").is_dir():
+        data_output = Path("./data") / Path(f"input-{str(day).zfill(2)}.txt")
+        data_output.write_text(res.text.strip(), encoding="utf-8")
+    else:
+        output = Path(f"input-{str(day).zfill(2)}.txt")
+        output.write_text(res.text.strip(), encoding="utf-8")
+
+    purl = f"https://adventofcode.com/{year}/day/{day}"
+    tres = requests.get(purl, cookies=cookies)
+    html = BeautifulSoup(tres.text, "html.parser")
+    articles = lmap(str, html.select("article"))
+    content = reduce(add, articles, "")
+    simplify = [
+        "python",
+        "/Users/tadhg/vcs/rest_tools_private/python/simplify_html.py",
+    ]
+    stext = run_process(simplify, {"input": content}).stdout
+    pandoc = ["pandoc", "-f", "html", "-t", "gfm"]
+    ptext = run_process(pandoc, {"input": stext}).stdout
+
+    if Path("./data/").exists() and Path("./data/").is_dir():
+        puzzle = Path("./data") / Path(f"puzzle-{str(day).zfill(2)}.md")
+    else:
+        puzzle = Path(f"puzzle-{str(day).zfill(2)}.md")
+    puzzle.write_text(ptext.strip(), encoding="utf-8")
+
+    # print(res.text.strip())
 
 
 if __name__ == "__main__":

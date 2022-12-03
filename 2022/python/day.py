@@ -17,7 +17,7 @@ def run_day(daynum, improved=False):
     imprstr = "improved-" if improved else ""
     module = f"{imprstr}day-{daynum}"
     day = importlib.import_module(f".{module}", "days")
-    puzzle, test = f"input-{daynum}.txt", f"test-input-{daynum}.txt"
+    puzzle, test = f"data/input-{daynum}.txt", f"data/test-input-{daynum}.txt"
     data = load_and_process_input(puzzle, [day.preprocess])
     run_tests(
         test,

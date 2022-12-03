@@ -333,3 +333,31 @@ def innermap(func, sequence):
     # iterable. lmap will be called on each elements of sequence, with func as
     # the function.
     return lmap(partial(lmap, func), sequence)
+
+
+def add_trace_list(funcs):
+    nfuncs = []
+    for func in funcs:
+        if func.__qualname__ is None:
+            func.__qualname__ = ""
+        nfunc = add_trace(func)
+        nfuncs.append(nfunc)
+    return nfuncs
+
+
+def add_trace(func):
+    @wraps(func)
+    def addtrace(arg):
+        if hasattr(func, "_partial"):
+            funcdata = func._partial
+        else:
+            funcdata = func.__name__
+        pdb.set_trace()
+        return func(arg)
+
+    return addtrace
+
+
+def dpipe(data, *funcs):
+    funcs = add_trace_list(funcs)
+    return pipe(data, *funcs)
