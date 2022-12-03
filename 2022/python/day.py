@@ -42,6 +42,7 @@ def cli_main(args: [list | None] = None) -> None:
         print("First-pass version:")
         print("")
         run_day(options.day)
+        print("")
         print("Cleaned-up version:")
         print("")
         run_day(options.day, improved=True)
