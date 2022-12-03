@@ -2,6 +2,9 @@ from toolz import pipe
 from toolz.curried import map as cmap
 from tutils import splitstriplines
 
+TEST_ANSWERS = (15, 12)
+PUZZLE_ANSWERS = (13268, 15508)
+
 # The ordering here determines much of the list-shifting and modulo math below:
 BEATS = {
     "A": "Y",
