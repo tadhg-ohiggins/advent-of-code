@@ -27,13 +27,13 @@ MINE = list(BEATS.values())
 
 def get_result(pair):
     shape_score = (MINE[2:] + MINE[:2]).index(pair[1]) + 1
-    distance = (OPP.index(pair[0]) - MINE.index(pair[1])) % 3 % 3
+    distance = (OPP.index(pair[0]) - MINE.index(pair[1])) % 3
     return shape_score + 6 - (distance * 3)
 
 
 def get_moves(pair):
     amount = {"X": 1, "Y": 2, "Z": 0}.get(pair[1])
-    response = MINE[(OPP.index(pair[0]) + amount) % 3 % 3]
+    response = MINE[(OPP.index(pair[0]) + amount) % 3]
     return [pair[0], response]
 
 
