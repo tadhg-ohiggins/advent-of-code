@@ -1,11 +1,7 @@
 from string import ascii_lowercase, ascii_uppercase
 from more_itertools import chunked, divide
 from toolz import pipe
-from tutils import (
-    c_lmap as cmap,
-    lmap,
-    splitstriplines,
-)
+from tutils import c_lmap as cmap, lmap, splitstriplines
 from tadhg_utils import star
 
 
