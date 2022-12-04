@@ -32,12 +32,14 @@ def run_day(daynum, improved=False):
     answer_one = day.part_one(data)
     print("Answer one:", answer_one)
     richxerox.copy(str(answer_one))
-    assert answer_one == day.PUZZLE_ANSWERS[0]
+    if day.PUZZLE_ANSWERS[0] is not None:
+        assert answer_one == day.PUZZLE_ANSWERS[0]
     answer_two = day.part_two(data)
     if answer_two:
         print("Answer two:", answer_two)
         richxerox.copy(str(answer_two))
-        assert answer_two == day.PUZZLE_ANSWERS[1]
+        if day.PUZZLE_ANSWERS[1] is not None:
+            assert answer_two == day.PUZZLE_ANSWERS[1]
 
 
 def cli_main(args: [list | None] = None) -> None:
