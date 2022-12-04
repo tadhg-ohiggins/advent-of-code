@@ -3,7 +3,7 @@ from operator import itemgetter
 from toolz import pipe
 from tadhg_utils import (
     p_lmap as cmap,  # Partial/curried map that returns a list.
-    lfilter,  # filter that returns a list
+    lfilter,  # filter that returns a list.
     splitstriplines,
     splitstrip,
 )
