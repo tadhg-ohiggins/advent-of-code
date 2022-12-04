@@ -1,9 +1,7 @@
-from functools import partial
 from operator import methodcaller
 from toolz import compose_left, pipe
 from tadhg_utils import (
     p_lmap as cmap,  # Partial/curryable map that returns a list.
-    lcompact,  # filter(None) that returns a list.
     splitstriplines,
     star,  # Changes function so that star(func)(arg) == func(*arg).
 )
@@ -36,12 +34,10 @@ preprocess = compose_left(
 
 part_one = compose_left(
     cmap(star(is_contained)),
-    lcompact,
-    len,
+    sum,
 )
 
 part_two = compose_left(
     cmap(star(is_partly_contained)),
-    lcompact,
-    len,
+    sum,
 )
