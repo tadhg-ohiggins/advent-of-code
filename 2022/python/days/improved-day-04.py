@@ -5,7 +5,7 @@ from tadhg_utils import (
     p_lmap as cmap,  # Partial/curryable map that returns a list.
     lfilter,  # filter that returns a list.
     splitstriplines,
-    star,
+    star,  # Wraps a function to act as if it's being passed *args.
 )
 
 TEST_ANSWERS = (2, 4)
