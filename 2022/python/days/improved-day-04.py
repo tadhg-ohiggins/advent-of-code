@@ -1,59 +1,47 @@
 from functools import partial
-from operator import itemgetter
-from toolz import pipe
+from operator import methodcaller
+from toolz import compose_left, pipe
 from tadhg_utils import (
-    p_lmap as cmap,  # Partial/curried map that returns a list.
+    p_lmap as cmap,  # Partial/curryable map that returns a list.
     lfilter,  # filter that returns a list.
     splitstriplines,
-    splitstrip,
+    star,
 )
 
 TEST_ANSWERS = (2, 4)
 PUZZLE_ANSWERS = (567, 907)
 
 
-def get_range_ends(pair):
+def get_ints(line):
     procs = (
-        cmap(partial(splitstrip, sep="-")),
-        cmap(cmap(int)),
+        methodcaller("replace", "-", ","),
+        methodcaller("split", ","),
+        cmap(int),
     )
-    return pipe(pair, *procs)
+    return pipe(line, *procs)
 
 
-def is_contained(pair):
-    a, b, x, y = pair[0] + pair[1]
+def is_contained(a, b, x, y):
     return (a <= x and b >= y) or (a >= x and b <= y)
 
 
-def is_partly_contained(pair):
-    a, b, x, y = pair[0] + pair[1]
+def is_partly_contained(a, b, x, y):
     return a <= y and b >= x
 
 
-def preprocess(data):
-    procs = [
-        splitstriplines,
-        cmap(partial(splitstrip, sep=",")),
-        cmap(get_range_ends),
-    ]
-    return pipe(data, *procs)
+preprocess = compose_left(
+    splitstriplines,
+    cmap(get_ints),
+)
 
+part_one = compose_left(
+    cmap(star(is_contained)),
+    partial(lfilter, None),
+    len,
+)
 
-def part_one(data):
-    procs = (
-        partial(sorted, key=itemgetter(0)),
-        cmap(is_contained),
-        partial(lfilter, None),
-        len,
-    )
-    return pipe(data, *procs)
-
-
-def part_two(data):
-    procs = (
-        partial(sorted, key=itemgetter(0)),
-        cmap(is_partly_contained),
-        partial(lfilter, None),
-        len,
-    )
-    return pipe(data, *procs)
+part_two = compose_left(
+    cmap(star(is_partly_contained)),
+    partial(lfilter, None),
+    len,
+)
