@@ -5,7 +5,7 @@ from tadhg_utils import (
     p_lmap as cmap,  # Partial/curryable map that returns a list.
     lfilter,  # filter that returns a list.
     splitstriplines,
-    star,  # star(func)(arg) == func(*arg)
+    star,  # Changes function so that star(func)(arg) == func(*arg).
 )
 
 TEST_ANSWERS = (2, 4)
