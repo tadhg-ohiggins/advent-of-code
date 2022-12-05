@@ -1,4 +1,4 @@
-from functools import partial, reduce
+from functools import reduce
 import re
 from toolz import pipe
 from tadhg_utils import (
