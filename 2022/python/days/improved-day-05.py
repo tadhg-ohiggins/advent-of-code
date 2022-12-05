@@ -25,7 +25,7 @@ def get_crates(lines, position):
 def get_initial_state(text):
     lines = text.splitlines()
     positions = list(re.finditer(r"\d+", lines[-1]))
-    stacks = lines[:-1][::-1]
+    stacks = lines[:-1][::-1]  # Reverse because we want to build bottom-up.
     return {int(pos.group()): get_crates(stacks, pos) for pos in positions}
 
 
