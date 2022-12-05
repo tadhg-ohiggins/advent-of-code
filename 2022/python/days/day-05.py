@@ -23,7 +23,7 @@ import pdb
 
 
 TEST_ANSWERS = ("CMZ", "MCD")
-PUZZLE_ANSWERS = (None, None)
+PUZZLE_ANSWERS = ("JDTMRWCQJ", "VHJDDCWRD")
 
 
 def get_initial_state(text):
