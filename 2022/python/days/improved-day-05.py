@@ -3,7 +3,7 @@ import re
 from toolz import pipe
 from tadhg_utils import (
     p_lmap as cmap,  # Partial/curryable version of map that return a list.
-    lfilter,
+    lfilter,  # A version of filter that returns a list.
     lmap,  # A version of map that returns a list.
     splitstriplines,
 )
