@@ -49,9 +49,7 @@ def make_move_multi(state, num, origin, destination):
 
 
 def preprocess(data):
-    procs = (lambda t: t.split("\n\n"),)
-    result = pipe(data, *procs)
-    return result
+    return data.split("\n\n")
 
 
 def part_one(data):
