@@ -13,6 +13,10 @@ TEST_ANSWERS = ("CMZ", "MCD")
 PUZZLE_ANSWERS = ("JDTMRWCQJ", "VHJDDCWRD")
 
 
+def parse_state_and_moves(data):
+    return get_initial_state(data[0]), get_moves(data[1])
+
+
 def get_crates(lines, position):
     start, end = position.span()
     return lfilter(None, (line[start:end].strip() for line in lines))
@@ -51,16 +55,12 @@ def preprocess(data):
 
 
 def part_one(data):
-    state = get_initial_state(data[0])
-    moves = get_moves(data[1])
+    state, moves = parse_state_and_moves(data)
     update = reduce(lambda acc, m: make_move(acc, *m), moves, state)
-    result = "".join([update[k][-1] for k in update])
-    return result
+    return "".join([update[k][-1] for k in update])
 
 
 def part_two(data):
-    state = get_initial_state(data[0])
-    moves = get_moves(data[1])
+    state, moves = parse_state_and_moves(data)
     update = reduce(lambda acc, m: make_move_multi(acc, *m), moves, state)
-    result = "".join([update[k][-1] for k in update])
-    return result
+    return "".join([update[k][-1] for k in update])
