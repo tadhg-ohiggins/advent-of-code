@@ -6,12 +6,13 @@ TEST_ANSWERS = (7, 19)
 PUZZLE_ANSWERS = (1582, 3588)
 
 
-def find_qual(seqs):
-    not_all_diff = lambda seq: len(seq) != len(set(seq))
-    return first(dropwhile(not_all_diff, seqs))
-
-
 def find_last_char_of_first_unique(data, sequences):
+    def not_all_diff(seq):
+        return len(seq) != len(set(seq))
+
+    def find_qual(seqs):
+        return first(dropwhile(not_all_diff, seqs))
+
     start = "".join(find_qual(sequences))
     return re.search(start, data).span()[-1]
 
