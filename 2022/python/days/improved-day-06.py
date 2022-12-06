@@ -1,20 +1,11 @@
-from itertools import dropwhile
-import re
-from toolz import first, sliding_window
+from toolz import sliding_window
 
 TEST_ANSWERS = (7, 19)
 PUZZLE_ANSWERS = (1582, 3588)
 
 
-def find_last_char_of_first_unique(data, sequences):
-    def not_all_diff(seq):
-        return len(seq) != len(set(seq))
-
-    def find_qual(seqs):
-        return first(dropwhile(not_all_diff, seqs))
-
-    start = "".join(find_qual(sequences))
-    return re.search(start, data).span()[-1]
+def find_first_unique(sequences):
+    return "".join(next(s for s in sequences if len(set(s)) == len(s)))
 
 
 def preprocess(data):
@@ -23,9 +14,9 @@ def preprocess(data):
 
 def part_one(data):
     windows = sliding_window(4, data)
-    return find_last_char_of_first_unique(data, windows)
+    return 4 + data.index(find_first_unique(windows))
 
 
 def part_two(data):
     windows = sliding_window(14, data)
-    return find_last_char_of_first_unique(data, windows)
+    return 14 + data.index(find_first_unique(windows))
