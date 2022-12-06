@@ -1,3 +1,4 @@
+from functools import reduce
 from math import prod
 from typing import Any, List
 from tutils import (
@@ -37,6 +38,18 @@ def count_trees(
     lines: List[str], rightstep: int, downstep: int, start: int = 1
 ) -> int:
     lnlen = len(lines[0])
+
+    def process_line(acc, line):
+        right, trees = acc[0] + rightstep, acc[1]
+        in_bounds = lnlen > right
+        right = right if in_bounds else abs(right - lnlen)
+        space = line[right] != "#"
+        trees = trees if space else trees + 1
+        return (right, trees)
+
+    _, trees = reduce(process_line, lines[start::downstep], (0, 0))
+
+    """
     right, trees = 0, 0
     for ln in lines[start::downstep]:
         right = right + rightstep
@@ -44,6 +57,8 @@ def count_trees(
             right = abs(right - lnlen)
         if ln[right] == "#":
             trees = trees + 1
+    """
+
     return trees
 
 

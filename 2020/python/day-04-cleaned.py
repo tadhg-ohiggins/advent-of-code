@@ -4,6 +4,9 @@ from typing import List
 from tutils import (
     hexc,
     in_incl_range,
+    is_char_09,
+    is_char_hex,
+    item_has,
     lfilter,
     lmap,
     load_and_process_input,
@@ -24,8 +27,8 @@ def parse_passport(data: List[str]) -> dict:
 
 
 def validate_passport_basic(passport: dict) -> bool:
-    required = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "hgt"]
-    return all([passport.get(f) for f in required])
+    required = ("ecl", "pid", "eyr", "hcl", "byr", "iyr", "hgt")
+    return all(passport.get(f) for f in required)
 
 
 def check_height(text: str) -> bool:
@@ -41,12 +44,12 @@ def validate_passport_advanced(pp: dict) -> bool:
         return False
     checks = [
         len(pp.get("pid", "")) == 9,
-        all([_ in ascii_digits for _ in pp.get("pid", "")]),
+        all(map(is_char_09, pp.get("pid", ""))),
         in_incl_range(1920, 2002, int(pp.get("byr", 0))),
         in_incl_range(2010, 2020, int(pp.get("iyr", 0))),
         in_incl_range(2020, 2030, int(pp.get("eyr", 0))),
         pp.get("ecl") in ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"],
-        all([_ in hexc for _ in pp.get("hcl", [])[1:]]),
+        all(map(is_char_hex, pp.get("hcl", [])[1:])),
         pp.get("hcl", [])[0] == "#",
         check_height(pp.get("hgt", "")),
     ]

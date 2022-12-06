@@ -1,6 +1,7 @@
+import pdb
 from functools import partial
 from itertools import product
-from typing import FrozenSet, List, Tuple
+from typing import Callable, FrozenSet, List, Tuple
 from toolz import compose_left  # type: ignore
 from tutils import (
     generate_bounded_coords,
@@ -36,6 +37,26 @@ def lines_to_points(lines: List[str]) -> FrozenSet[Tuple]:
 
 def addtuple(t1: Tuple[int, ...], t2: Tuple[int, ...]) -> Tuple[int, ...]:
     return tuple(map(sum, zip(t1, t2)))
+    """
+    if len(t1) == 3:
+        return (t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
+    return (
+        t1[0] + t2[0],
+        t1[1] + t2[1],
+        max([0, t1[2] + t2[2]]),
+        max([0, t1[3] + t2[3]]),
+    )
+    """
+    # return tuple(a + b for a, b in zip(t1, t2))
+    """
+    """
+    newlist = []
+    for a, b in zip(t1, t2):
+        newlist.append(a + b)
+    return tuple(newlist)
+    """
+    return tuple(map(sum, zip(t1, t2)))
+    """
 
 
 def restore_symmetry(
@@ -68,6 +89,34 @@ def restore_symmetry(
     return frozenset(new_points)
 
 
+def filtered_cycle(
+    func: Callable,
+    points_on: FrozenSet[Tuple],
+) -> FrozenSet[Tuple]:
+    """
+    func filters the points that should be considered for the evaluation.
+    """
+    new_points = set()
+    dimensions = len(next(iter(points_on)))
+    transforms = adjacent_transforms(dimensions)
+    point_cache = {}
+    for ppoint in points_on:
+        if not func(ppoint):
+            continue
+        neighbor_candidates = {addtuple(ppoint, tform) for tform in transforms}
+        for npoint in neighbor_candidates:
+            point_cache[npoint] = 1 + point_cache.get(npoint, 0)
+
+    for ppoint in points_on:
+        if point_cache.get(ppoint) in (2, 3):
+            new_points.add(ppoint)
+
+    for npoint in point_cache:
+        if point_cache[npoint] == 3:
+            new_points.add(npoint)
+    return points_on
+
+
 def cycle(
     points_on: FrozenSet[Tuple],
     symmetrical_dimensions: Tuple[int, ...] = tuple(),
@@ -89,37 +138,72 @@ def cycle(
     that point that exist on the negative sides for the symmetrical dimensions.
     """
     new_points = set()
+    z0 = filtered_cycle(lambda x: x[2] == 0, points_on)
+    subset = {x for x in points_on if x[2] >= 0}
+    # symmetrical_dimensions = tuple()
+    """
+    points_on = frozenset(
+        {
+            p
+            for p in points_on
+            if all([p[n] >= 0 for n in symmetrical_dimensions])
+        }
+    )
+    """
+
     dimensions = len(next(iter(points_on)))
     transforms = adjacent_transforms(dimensions)
+    """
     minimums, maximums = get_min_max_bounds_from_coords(points_on)
     minimums = [_ - 1 for _ in minimums]
     maximums = [_ + 1 for _ in maximums]
     # Exclude negative values in the symmetrical dimensions:
     for sd in symmetrical_dimensions:
         minimums[sd] = max([0, minimums[sd]])
-    products = generate_bounded_coords(minimums, maximums)
-    for ppoint in products:
+    """
+    point_cache = {}
+    for ppoint in subset:
         neighbor_candidates = {addtuple(ppoint, tform) for tform in transforms}
-        neighbors = neighbor_candidates.intersection(points_on)
-        active = False
-        if len(neighbors) == 3:
-            active = True
-        elif len(neighbors) == 2 and ppoint in points_on:
-            active = True
-        if active:
-            new_points.add(ppoint)
-            # Add the symmetrical points with negative values:
-            for p in restore_symmetry(symmetrical_dimensions, ppoint):
-                new_points.add(p)
+        for npoint in neighbor_candidates:
+            point_cache[npoint] = 1 + point_cache.get(npoint, 0)
 
-    return frozenset(new_points)
+    for ppoint in points_on:
+        if point_cache.get(ppoint) in (2, 3):
+            if ppoint[2] != 0:
+                new_points.add(ppoint)
+            if ppoint[2] > 0:
+                newpoint = list(ppoint)
+                newpoint[2] = -1 * newpoint[2]
+                new_points.add(tuple(newpoint))
+
+    for npoint in point_cache:
+        if point_cache[npoint] == 3:
+            if ppoint[2] != 0:
+                new_points.add(ppoint)
+            if ppoint[2] > 0:
+                newpoint = list(ppoint)
+                newpoint[2] = -1 * newpoint[2]
+                new_points.add(tuple(newpoint))
+
+    return frozenset(new_points.union(z0))
 
 
 def process_one(points_on: FrozenSet[Tuple]) -> int:
     # We know there's symmetry if all the values for a dimension are the same:
     sd = [i for i, vals in enumerate(zip(*points_on)) if len(set(vals)) == 1]
     cycle_one = partial(cycle, symmetrical_dimensions=tuple(sd))
-    return len(compose_left(*([cycle_one] * 6))(points_on))
+    # return len(compose_left(*([cycle_one] * 6))(points_on))
+    result = compose_left(*([cycle_one] * 2))(points_on)
+    print(result)
+    return len(result)
+    """
+    extra_points = set()
+    rs = partial(restore_symmetry, tuple(sd))
+    for point in result:
+        for p in rs(point):
+            extra_points.add(p)
+    return len(result.union(extra_points))
+    """
 
 
 def three_to_four(points_on: FrozenSet[Tuple]) -> FrozenSet[Tuple]:
@@ -131,18 +215,27 @@ def process_two(points_on: FrozenSet[Tuple]) -> int:
     points4 = three_to_four(points_on)
     sd = [i for i, vals in enumerate(zip(*points4)) if len(set(vals)) == 1]
     cycle_two = partial(cycle, symmetrical_dimensions=tuple(sd))
-    return len(compose_left(*[*([cycle_two] * 6)])(points4))
+    # return len(compose_left(*[*([cycle_two] * 6)])(points4))
+    result = compose_left(*([cycle_two] * 6))(points4)
+    print(len(result))
+    extra_points = set()
+    rs = partial(restore_symmetry, tuple(sd))
+    for point in result:
+        for p in rs(point):
+            extra_points.add(p)
+    return len(result.union(extra_points))
 
 
 def cli_main() -> None:
     input_funcs = [splitstriplines, lines_to_points]
     data = load_and_process_input(INPUT, input_funcs)
-    initial_points = data.copy()
     run_tests(TEST, TA1, TA2, ANSWER1, input_funcs, process_one, process_two)
+    initial_points = data.copy()
     answer_one = process_one(data)
     assert answer_one == ANSWER1
     print("Answer one:", answer_one)
     answer_two = process_two(initial_points)
+    print("Answer two:", answer_two)
     assert answer_two == ANSWER2
     print("Answer two:", answer_two)
 

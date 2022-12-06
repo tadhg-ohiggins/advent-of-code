@@ -18,8 +18,10 @@ ANSWER2 = 12747392
 
 def find_totals(target: int, array: List[int]) -> OInt:
     for item in array:
-        if (target - item) in array:
-            return (target - item) * item
+        # if (target - item) in array:
+        # return (target - item) * item
+        if (result := target - item) in array:
+            return result * item
     return None
 
 

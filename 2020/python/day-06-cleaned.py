@@ -18,7 +18,7 @@ ANSWER2 = 3493
 
 
 def group_to_unanimous(group: List[str]) -> int:
-    check = lambda char: all([char in line for line in group])
+    check = lambda char: all(char in line for line in group)
     return len(lfilter(check, set("".join(group))))
 
 

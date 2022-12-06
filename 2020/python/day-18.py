@@ -175,7 +175,4 @@ def cli_main():
 
 
 if __name__ == "__main__":
-    # test = Path("test-input-00.txt").read_text().strip()
-    # test_answer = whatever
-    # assert process(test, params) == test_answer
     cli_main()
