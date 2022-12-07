@@ -33,7 +33,12 @@ NAMES = {
     "Tadhg O'Higgins": "Tadhg",
 }
 
-OPENING_TIME = from_8601("2021-11-30 21:00")
+global YEAR  # ugh
+YEAR = "2022"
+
+# OPENING_TIME = from_8601("2022-11-30 21:00")
+
+opening_time = lambda: from_8601(f"{YEAR}-11-30 21:00")
 
 testdata = """
 {"members":{"869762":{"stars":0,"local_score":0,"global_score":0,"id":"869762","completion_day_level":{},
@@ -122,6 +127,8 @@ def cli_main():
     parser.add_argument("--year", type=int, default=2021)
     options = parser.parse_args()
     leaderboard_id, year = options.id, options.year
+    global YEAR
+    YEAR = options.year
     # skip stuff for actaully getting the leaderboard here
     """
     if leaderboard_id
@@ -207,7 +214,7 @@ def fmt_timestamps(day, timestamps):
 
 
 def fmt_timestamp(day, timestamp, win):
-    start = OPENING_TIME + timedelta(days=day)
+    start = opening_time() + timedelta(days=day)
     end = datetime.fromtimestamp(timestamp)
     delta = end - start
     if delta.days < 0:
