@@ -33,7 +33,6 @@ NAMES = {
     "Tadhg O'Higgins": "Tadhg",
 }
 
-global YEAR  # ugh
 YEAR = "2022"
 
 # OPENING_TIME = from_8601("2022-11-30 21:00")
