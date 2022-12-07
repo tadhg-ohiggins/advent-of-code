@@ -16,7 +16,7 @@ import pdb
 
 
 TEST_ANSWERS = (95437, 24933642)
-PUZZLE_ANSWERS = (1915606, None)
+PUZZLE_ANSWERS = (1915606, 5025657)
 
 
 def all_diff(seq):
