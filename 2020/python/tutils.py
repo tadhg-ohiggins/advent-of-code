@@ -235,7 +235,7 @@ def load_and_process_input(
 
 
 def load_input(fname: str) -> str:
-    return Path(fname).read_text().strip()
+    return Path(fname).read_text()
 
 
 def process_input(input_funcs: List[Callable], text: str) -> Any:
