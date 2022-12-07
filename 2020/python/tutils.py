@@ -335,18 +335,94 @@ def innermap(func, sequence):
     return lmap(partial(lmap, func), sequence)
 
 
+################################################################################
+### update_wrapper() and wraps() decorator
+################################################################################
+
+# update_wrapper() and wraps() are tools to help write
+# wrapper functions that can handle naive introspection
+
+WRAPPER_ASSIGNMENTS = (
+    "__module__",
+    "__name__",
+    "__qualname__",
+    "__doc__",
+    "__annotations__",
+)
+WRAPPER_UPDATES = ("__dict__",)
+
+
+def tupdate_wrapper(
+    wrapper, wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES
+):
+    """Update a wrapper function to look like the wrapped function
+
+    wrapper is the function to be updated
+    wrapped is the original function
+    assigned is a tuple naming the attributes assigned directly
+    from the wrapped function to the wrapper function (defaults to
+    functools.WRAPPER_ASSIGNMENTS)
+    updated is a tuple naming the attributes of the wrapper that
+    are updated with the corresponding attribute from the wrapped
+    function (defaults to functools.WRAPPER_UPDATES)
+    """
+    for attr in assigned:
+        try:
+            value = getattr(wrapped, attr)
+        except AttributeError:
+            pass
+        else:
+            """
+            Somewhere toolz Compose gets a __qualname__ of None and that
+            breaks functools.update_wrapper, so I had to overwrite this and
+            wrap and use those in add_trace.
+            """
+            if attr == "__qualname__" and value is None:
+                value = ""
+            setattr(wrapper, attr, value)
+    for attr in updated:
+        getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
+    # Issue #17482: set __wrapped__ last so we don't inadvertently copy it
+    # from the wrapped function when updating __dict__
+    wrapper.__wrapped__ = wrapped
+    # Return the wrapper so this can be used as a decorator via partial()
+    return wrapper
+
+
+def twraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
+    """Decorator factory to apply update_wrapper() to a wrapper function
+
+    Returns a decorator that invokes update_wrapper() with the decorated
+    function as the wrapper argument and the arguments to wraps() as the
+    remaining arguments. Default arguments are as for update_wrapper().
+    This is a convenience function to simplify applying partial() to
+    update_wrapper().
+    """
+    return partial(
+        tupdate_wrapper, wrapped=wrapped, assigned=assigned, updated=updated
+    )
+
+
 def add_trace_list(funcs):
     nfuncs = []
     for func in funcs:
-        if func.__qualname__ is None:
-            func.__qualname__ = ""
         nfunc = add_trace(func)
         nfuncs.append(nfunc)
     return nfuncs
 
 
+def trace(arg):
+    pdb.set_trace()
+    return arg
+
+
+def strace(*args):
+    pdb.set_trace()
+    return args
+
+
 def add_trace(func):
-    @wraps(func)
+    @twraps(func)
     def addtrace(arg):
         if hasattr(func, "_partial"):
             funcdata = func._partial
