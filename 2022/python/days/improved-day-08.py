@@ -69,9 +69,8 @@ def part_one(data: list[str]):
 
 
 def part_two(data: list[str]):
-    scores = [
-        eval_visible_distance(data, i, j)
-        for i, _ in enumerate(data)
-        for j in range(len(data[i]))
-    ]
-    return max(scores)
+    def reducer(acc, v):
+        return max(acc, eval_visible_distance(data, v[0], v[1]))
+
+    coords = ((i, j) for i, _ in enumerate(data) for j in range(len(data[i])))
+    return reduce(reducer, coords, 0)
