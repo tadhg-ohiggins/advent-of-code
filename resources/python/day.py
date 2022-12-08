@@ -1,15 +1,14 @@
+#!python
 import argparse
 from pathlib import Path
 import importlib
 import importlib.util
 import sys
 import richxerox
-from tadhg_utils import get_git_root
+from tadhg_utils import get_git_root, splitstrip
 
-# from tutils import (
-#     load_and_process_input,
-#     run_tests,
-# )
+# Note that this is relative from actual file location, not symlink location:
+import tutils
 
 """
 python day.py [day] [optional: "o"(default)/"i"/"b"]
@@ -47,7 +46,7 @@ def setup_cli_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_module_from_path(name, filepath, improved=False):
+def load_module_from_path(name, filepath):
     spec = importlib.util.spec_from_file_location(name, filepath)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -55,24 +54,23 @@ def load_module_from_path(name, filepath, improved=False):
 
 
 def run_day(daynum, improved=False):
-    imprstr = "improved-" if improved else ""
-    modulename = f"{imprstr}day-{daynum}"
     gitroot = get_git_root()
-    modulepath = gitroot / f"2022/python/days/{modulename}.py"
-    script = Path(sys.argv[0])
-    import pdb
+    script = Path(sys.argv[0]).absolute()
+    path_year = splitstrip(str(script).replace(str(gitroot), ""), sep="/")[0]
 
-    pdb.set_trace()
-    # spec = importlib.util.spec_from_file_location(
-    #     "day",
-    #     f"/Users/tadhg/vcs/advent-of-code/2022/python/days/{modulename}.py",
-    # )
-    # day = importlib.util.module_from_spec(spec)
-    # spec.loader.exec_module(day)
-    day = load_module_from_path("day", modulepath)
-    puzzle, test = f"data/input-{daynum}.txt", f"data/test-input-{daynum}.txt"
-    data = load_and_process_input(puzzle, [day.preprocess])
-    run_tests(
+    libpath = gitroot / "resources" / "python"
+    dayspath = gitroot / f"{path_year}/python/days/"
+    datapath = gitroot / f"{path_year}/python/data/"
+
+    imprstr = "improved-" if improved else ""
+    daymodulename = f"{imprstr}day-{daynum}"
+    daymodulepath = dayspath / f"{daymodulename}.py"
+
+    day = load_module_from_path("day", daymodulepath)
+    puzzle = datapath / f"input-{daynum}.txt"
+    test = datapath / f"test-input-{daynum}.txt"
+    data = tutils.load_and_process_input(puzzle, [day.preprocess])
+    tutils.run_tests(
         test,
         day.TEST_ANSWERS[0],
         day.TEST_ANSWERS[1],

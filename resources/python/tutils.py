@@ -407,6 +407,8 @@ def twraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
 def add_trace_list(funcs):
     nfuncs = []
     for func in funcs:
+        if func.__qualname__ is None:
+            func.__qualname__ = ""
         nfunc = add_trace(func)
         nfuncs.append(nfunc)
     return nfuncs
@@ -423,7 +425,7 @@ def strace(*args):
 
 
 def add_trace(func):
-    @twraps(func)
+    @wraps(func)
     def addtrace(arg):
         if hasattr(func, "_partial"):
             funcdata = func._partial
