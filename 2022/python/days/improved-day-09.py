@@ -49,12 +49,10 @@ def move_rope_knots(visited: set, rope: list[Point], direction: str):
     return visited | {newrope[-1]}, newrope
 
 
-def move_knot(rope: list[Point], incr: int, current: Point):
+def move_knot(rope: list[Point], incr: int, curr: Point):
     # Since we're enumerating rope[1:], rope[incr] gets us what we want here:
     last = rope[incr]
-    if last.is_adj(current):
-        return current
-    return move_tail_towards_head(last, current)
+    return curr if last.is_adj(curr) else move_tail_towards_head(last, curr)
 
 
 def get_visits(knots: int, moves: list[tuple[str, int]]):
