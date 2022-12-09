@@ -59,7 +59,7 @@ def move_rope_knots(visited: set, rope: list[Point], direction: str):
 def move_knot(rope: list[Point], incr: int, current: Point):
     # Since we're enumerating rope[1:], rope[incr] gets us what we want here:
     last = rope[incr]
-    if are_adjacent(last, current):
+    if last.is_adj(current):
         return current
     return move_tail_towards_head(last, current)
 
