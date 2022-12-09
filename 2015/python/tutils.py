@@ -1,1 +1,1 @@
-../../2020/python/tutils.py
+resources/python/tutils.py
