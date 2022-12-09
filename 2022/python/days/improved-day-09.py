@@ -1,6 +1,9 @@
 from functools import partial
 
-from tutils import Point, adjacent_transforms
+from tutils import (
+    Point,  # Fairly basic Point structure.
+    adjacent_transforms,  # Given n-d, get the n-d Points to add to get adj.
+)
 from tadhg_utils import (
     get_sign,  # anything below zero -> -1, 0 -> 0, anything above zero -> 1.
     lmap,  # A version of map that returns a list.
@@ -16,6 +19,7 @@ DIRECTIONS = {
     "l": Point(-1, 0),
     "r": Point(1, 0),
 }
+ADJACENTS = lmap(lambda x: Point(*x), adjacent_transforms(2))
 
 
 def parse_move(line):
@@ -28,7 +32,7 @@ def move_pt_one(pos: Point, direction: str):
 
 
 def are_adjacent(head: Point, tail: Point):
-    neighbors = map(lambda x: head + Point(*x), adjacent_transforms(2))
+    neighbors = map(lambda x: head + x, ADJACENTS)
     return (head == tail) or (tail in neighbors)
 
 
