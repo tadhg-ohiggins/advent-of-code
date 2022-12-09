@@ -33,12 +33,6 @@ def are_adjacent(head: Point, tail: Point):
 
 
 def move_tail_towards_head(head: Point, tail: Point):
-    if head.x == tail.x:
-        sign = 1 if head.y > tail.y else -1
-        return tail + (Point(0, 1) * sign)
-    if head.y == tail.y:
-        sign = 1 if head.x > tail.x else -1
-        return tail + (Point(1, 0) * sign)
     diff = head - tail
     return tail + Point(get_sign(diff.x), get_sign(diff.y))
 
