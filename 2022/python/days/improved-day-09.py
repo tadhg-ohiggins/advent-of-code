@@ -2,7 +2,7 @@ from functools import partial
 
 from tutils import Point, adjacent_transforms
 from tadhg_utils import (
-    get_sign,
+    get_sign,  # anything below zero -> -1, 0 -> 0, anything above zero -> 1.
     lmap,  # A version of map that returns a list.
     splitstriplines,
 )
