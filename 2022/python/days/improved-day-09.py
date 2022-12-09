@@ -1,9 +1,7 @@
 from functools import partial
-from toolz import pipe
 
 from tutils import Point, adjacent_transforms
 from tadhg_utils import (
-    p_lmap as cmap,  # Partial/curryable version of map that return a list.
     lmap,  # A version of map that returns a list.
     splitstriplines,
 )
@@ -19,15 +17,12 @@ def parse_move(line):
 
 
 def move_pt_one(pos: Point, direction: str):
-    if direction == "u":
-        return pos + Point(0, 1)
-    if direction == "d":
-        return pos - Point(0, 1)
-    if direction == "l":
-        return pos - Point(1, 0)
-    if direction == "r":
-        return pos + Point(1, 0)
-    return None
+    return {
+        "u": pos + Point(0, 1),
+        "d": pos - Point(0, 1),
+        "l": pos - Point(1, 0),
+        "r": pos + Point(1, 0),
+    }[direction]
 
 
 def are_adjacent(head: Point, tail: Point):
@@ -36,9 +31,7 @@ def are_adjacent(head: Point, tail: Point):
 
 
 def abs_lim_1(value: int):
-    if value < 0:
-        return max([-1, value])
-    return min([1, value])
+    return max([-1, value]) if (value < 0) else min([1, value])
 
 
 def move_tail_towards_head(head: Point, tail: Point):
@@ -48,7 +41,8 @@ def move_tail_towards_head(head: Point, tail: Point):
     if head.y == tail.y:
         sign = 1 if head.x > tail.x else -1
         return tail + (Point(1, 0) * sign)
-    return tail + Point(*map(abs_lim_1, list(head - tail)))
+    diff = head - tail
+    return tail + Point(abs_lim_1(diff.x), abs_lim_1(diff.y))
 
 
 def move_rope(visited: set, rope: list[Point], move: tuple[str, int]):
@@ -82,12 +76,7 @@ def get_visits(knots: int, moves: list[tuple[str, int]]):
 
 
 def preprocess(data):
-    procs = [
-        splitstriplines,
-        cmap(parse_move),
-    ]
-    result = pipe(data, *procs)
-    return result
+    return lmap(parse_move, splitstriplines(data))
 
 
 def part_one(data):
