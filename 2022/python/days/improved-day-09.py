@@ -2,6 +2,7 @@ from functools import partial
 
 from tutils import Point, adjacent_transforms
 from tadhg_utils import (
+    get_sign,
     lmap,  # A version of map that returns a list.
     splitstriplines,
 )
@@ -9,6 +10,12 @@ from tadhg_utils import (
 
 TEST_ANSWERS = (13, 1)
 PUZZLE_ANSWERS = (5907, 2303)
+DIRECTIONS = {
+    "u": Point(0, 1),
+    "d": Point(0, -1),
+    "l": Point(-1, 0),
+    "r": Point(1, 0),
+}
 
 
 def parse_move(line):
@@ -17,21 +24,12 @@ def parse_move(line):
 
 
 def move_pt_one(pos: Point, direction: str):
-    return {
-        "u": pos + Point(0, 1),
-        "d": pos - Point(0, 1),
-        "l": pos - Point(1, 0),
-        "r": pos + Point(1, 0),
-    }[direction]
+    return pos + DIRECTIONS[direction]
 
 
 def are_adjacent(head: Point, tail: Point):
-    neighbors = lmap(lambda x: head + Point(*x), adjacent_transforms(2))
+    neighbors = map(lambda x: head + Point(*x), adjacent_transforms(2))
     return (head == tail) or (tail in neighbors)
-
-
-def abs_lim_1(value: int):
-    return max([-1, value]) if (value < 0) else min([1, value])
 
 
 def move_tail_towards_head(head: Point, tail: Point):
@@ -42,7 +40,7 @@ def move_tail_towards_head(head: Point, tail: Point):
         sign = 1 if head.x > tail.x else -1
         return tail + (Point(1, 0) * sign)
     diff = head - tail
-    return tail + Point(abs_lim_1(diff.x), abs_lim_1(diff.y))
+    return tail + Point(get_sign(diff.x), get_sign(diff.y))
 
 
 def move_rope(visited: set, rope: list[Point], move: tuple[str, int]):
