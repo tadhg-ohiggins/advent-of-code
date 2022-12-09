@@ -136,7 +136,6 @@ def run_process(
     base_opts = {"check": True, "text": True, "capture_output": True}
     opts = options if options else {}
     # pylint: disable=subprocess-run-check
-    # return subprocess.run(command, **{**base_opts, **opts})  # type: ignore
     return subprocess.run(command, **(base_opts | opts))  # type: ignore
 
 
@@ -149,7 +148,6 @@ class Point:
     y: int
 
     def __add__(self, other: Point) -> Point:
-        # Point(1,
         return Point(x=self.x + other.x, y=self.y + other.y)
 
     def __sub__(self, other: Point) -> Point:
@@ -160,6 +158,9 @@ class Point:
 
     def __iter__(self) -> Iterable:
         return iter([self.x, self.y])
+
+    def is_adj(self, other: Point) -> bool:
+        return all(val <= 1 for val in map(abs, (self - other)))
 
     @classmethod
     def from_string(cls, raw_point):
