@@ -1,6 +1,6 @@
 from functools import partial, reduce
 from itertools import takewhile
-from operator import mul
+from math import prod
 
 from tadhg_utils import (
     lmap,  # A version of map that returns a list.
@@ -52,9 +52,7 @@ def eval_visible_distance(data: list[str], linenum: int, colnum: int) -> int:
     height = line[colnum]
 
     directions = mirror_split(line, colnum) + mirror_split(col, linenum)
-    vis_scores = map(partial(get_score_for_trees, height), directions)
-
-    return reduce(lambda acc, v: mul(acc, v), vis_scores, 1)
+    return prod(map(partial(get_score_for_trees, height), directions))
 
 
 preprocess = splitstriplines
