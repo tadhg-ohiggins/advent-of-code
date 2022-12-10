@@ -41,7 +41,7 @@ two_answer = [
 ]
 
 TEST_ANSWERS = (13140, "\n".join(two_test))
-PUZZLE_ANSWERS = (17940, None)
+PUZZLE_ANSWERS = (17940, "\n".join(two_answer))
 
 
 def parse_line(line):
