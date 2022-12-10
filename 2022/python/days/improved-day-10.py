@@ -53,8 +53,6 @@ def part_one(lines):
 
         if (cycle - 20) % 40 == 0:
             values = values + [cycle * x]
-        if cycle >= 240:
-            print(cycle)
 
     return sum(values)
 
