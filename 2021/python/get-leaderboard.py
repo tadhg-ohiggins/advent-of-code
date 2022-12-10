@@ -10,11 +10,13 @@ from colorama import Fore, Style
 from requests_cache import CachedSession
 from toolz import compose_left, do, identity
 from tadhg_utils import (
+    get_git_root,
     format_timedelta,
     from_8601,
     lconcat,
     lfilter,
     lmap,
+    load_text,
     lpluck,
 )
 
@@ -147,9 +149,10 @@ def cli_main():
 def get_data(leaderboard, year):
     lb_path = LEADERBOARDS.get(leaderboard, leaderboard)
     url = f"https://adventofcode.com/{year}/leaderboard/private/view/{lb_path}"
-    cache_options = {"backend": "filesystem", "expire_after": 86400}
+    cache_options = {"backend": "filesystem", "expire_after": 43200}
     session = CachedSession("../../site_cache", **cache_options)
-    cookies = dict([Path("../.session-cookie").read_text().strip().split("=")])
+    cookiepath = get_git_root() / "resources" / ".session-cookie"
+    cookies = dict([load_text(cookiepath).strip().split("=")])
     response = session.get(url, cookies=cookies)
     if response.status_code != 200:
         pdb.set_trace()

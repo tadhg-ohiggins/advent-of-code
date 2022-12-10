@@ -4,7 +4,12 @@ from operator import add
 from pathlib import Path
 from bs4 import BeautifulSoup  # type: ignore
 import requests
-from tadhg_utils import lmap, load_text, run_process
+from tadhg_utils import (
+    get_git_root,
+    lmap,
+    load_text,
+    run_process,
+)
 
 
 def cli_main():
@@ -26,7 +31,8 @@ def cli_main():
     options = parser.parse_args()
     day, year = options.day, options.year
     url = f"https://adventofcode.com/{year}/day/{day}/input"
-    cookies = dict([load_text("../.session-cookie").strip().split("=")])
+    cookiepath = get_git_root() / "resources" / ".session-cookie"
+    cookies = dict([load_text(cookiepath).strip().split("=")])
     res = requests.get(url, cookies=cookies)
     if Path("./data/").exists() and Path("./data/").is_dir():
         data_output = Path("./data") / Path(f"input-{str(day).zfill(2)}.txt")

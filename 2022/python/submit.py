@@ -6,7 +6,12 @@ from bs4 import BeautifulSoup  # type: ignore
 import requests
 from rich.console import Console
 from rich.markdown import Markdown
-from tadhg_utils import lmap, load_text, run_process
+from tadhg_utils import (
+    get_git_root,
+    lmap,
+    load_text,
+    run_process,
+)
 
 
 def cli_main():
@@ -18,10 +23,15 @@ def cli_main():
         aocdate = datetime.datetime.now() + datetime.timedelta(hours=3)
         options.day = aocdate.day
     url = f"https://adventofcode.com/{options.year}/day/{options.day}/answer"
-    cookies = dict([load_text("../.session-cookie").strip().split("=")])
+    cookiepath = get_git_root() / "resources" / ".session-cookie"
+    cookies = dict([load_text(cookiepath).strip().split("=")])
     payload = {"level": options.part, "answer": options.answer}
     res = requests.post(url, data=payload, cookies=cookies)
     html = BeautifulSoup(res.text, "html.parser")
+    print_response(html)
+
+
+def print_response(html):
     articles = lmap(str, html.select("article"))
     content = reduce(add, articles, "")
     simplify = [
