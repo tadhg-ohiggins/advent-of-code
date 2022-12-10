@@ -1,7 +1,7 @@
 from toolz import pipe
 
 from tadhg_utils import (
-    p_lmap as cmap,  # Partial/curryable version of map that return a list.
+    p_lmap as cmap,  # Partial/curryable version of map that returns a list.
     splitstriplines,
 )
 
