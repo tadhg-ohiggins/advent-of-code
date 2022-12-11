@@ -69,7 +69,10 @@ def run_day(daynum, improved=False):
     day = load_module_from_path("day", daymodulepath)
     puzzle = datapath / f"input-{daynum}.txt"
     test = datapath / f"test-input-{daynum}.txt"
-    data = tutils.load_and_process_input(puzzle, [day.preprocess])
+    data1 = tutils.load_and_process_input(puzzle, [day.preprocess])
+    # Too many of the puzzles end up modifying the input somehow, so just get
+    # it twice:
+    data2 = tutils.load_and_process_input(puzzle, [day.preprocess])
     tutils.run_tests(
         test,
         day.TEST_ANSWERS[0],
@@ -79,12 +82,12 @@ def run_day(daynum, improved=False):
         day.part_one,
         day.part_two,
     )
-    answer_one = day.part_one(data)
+    answer_one = day.part_one(data1)
     print("Answer one:", answer_one)
     richxerox.copy(str(answer_one))
     if day.PUZZLE_ANSWERS[0] is not None:
         assert answer_one == day.PUZZLE_ANSWERS[0]
-    answer_two = day.part_two(data)
+    answer_two = day.part_two(data2)
     if answer_two:
         print("Answer two:", answer_two)
         richxerox.copy(str(answer_two))
