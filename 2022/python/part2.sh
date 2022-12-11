@@ -5,4 +5,4 @@ if [[ $# -eq 0 ]] then
     exit 1
 fi
 
-python submit.py ${@} --part 2
+python ../../resources/python/submit.py ${@} --part 2
