@@ -18,7 +18,7 @@ class HPoint(Point):
 
 
 TEST_ANSWERS = (31, 29)
-PUZZLE_ANSWERS = (497, None)
+PUZZLE_ANSWERS = (497, 492)
 
 
 def make_points(lines):
