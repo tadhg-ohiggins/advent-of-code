@@ -40,7 +40,6 @@ def make_graph(lines, start_qualifiers):
 
             if val in start_qualifiers:
                 starts.append((x, y))
-
             elif val == "E":
                 end = (x, y)
 
@@ -63,7 +62,6 @@ def part_two(data):
             path = nx.shortest_path(graph, start, end)
         except nx.exception.NetworkXNoPath:
             continue
-        if len(path) < steps:
-            steps = len(path)
+        steps = min(steps, len(path))
 
     return steps - 1
