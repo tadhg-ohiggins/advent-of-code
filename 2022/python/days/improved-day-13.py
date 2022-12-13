@@ -1,7 +1,6 @@
+from ast import literal_eval
 from functools import cmp_to_key
 from itertools import chain
-
-from toolz import pipe
 
 from tutils import splitblocks
 from tadhg_utils import (
@@ -15,15 +14,11 @@ PUZZLE_ANSWERS = (5557, 22425)
 
 
 def eval_block(block):
-    return cmap(eval)(splitstriplines(block))
+    return cmap(literal_eval)(splitstriplines(block))
 
 
 def preprocess(data):
-    procs = [
-        splitblocks,
-        cmap(eval_block),
-    ]
-    return pipe(data, *procs)
+    return cmap(eval_block)(splitblocks(data))
 
 
 def sort_pair(item_one, item_two):
