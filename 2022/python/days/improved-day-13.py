@@ -32,9 +32,8 @@ def sort_pair(item_one, item_two):
 
     if isinstance(item_one, list) and isinstance(item_two, list):
         for item in zip(item_one, item_two):
-            curr = sort_pair(*item)
-            if curr != 0:
-                return curr
+            if (comparison := sort_pair(*item)) != 0:
+                return comparison
 
         return len(item_one) - len(item_two)
 
